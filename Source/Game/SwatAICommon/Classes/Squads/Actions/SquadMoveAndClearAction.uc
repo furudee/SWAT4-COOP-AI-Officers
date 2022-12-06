@@ -15,42 +15,42 @@ import enum EquipmentSlot from Engine.HandheldEquipment;
 //
 // Variables
 
-var private MoveToActorGoal				CurrentMoveToActorGoal;
+var protected MoveToActorGoal				CurrentMoveToActorGoal;
 var protected OpenDoorGoal				CurrentOpenDoorGoal;
-var private MoveToLocationGoal			CurrentMoveToLocationGoal;
-var private ThrowGrenadeGoal			CurrentThrowGrenadeGoal;
-var private RemoveWedgeGoal             CurrentRemoveWedgeGoal;
-var private array<MoveAndClearGoal>		MoveAndClearGoals;
-var private array<StackupGoal>			MoveUpStackupGoals;
+var protected MoveToLocationGoal			CurrentMoveToLocationGoal;
+var protected ThrowGrenadeGoal			CurrentThrowGrenadeGoal;
+var protected RemoveWedgeGoal             CurrentRemoveWedgeGoal;
+var protected array<MoveAndClearGoal>		MoveAndClearGoals;
+var protected array<StackupGoal>			MoveUpStackupGoals;
 
-var private array<ClearPoint>			ClearPoints;
-var private bool						bClearingRoomIsOnRight;
-var private bool						bShouldStackUpBeforeClearing;
-var private Formation					ClearFormation;
-var private MoveInFormationGoal			FollowerMoveInFormationGoal;
-var private DistanceSensor				LeaderDistanceSensor;
-var private DistanceSensor				FollowerDistanceSensor;
-var private MoveAndClearGoal			LeaderMoveAndClearGoal;
-var private MoveAndClearGoal			FollowerMoveAndClearGoal;
-var private Timer						WaitForFirstTwoOfficersTimer;
+var protected array<ClearPoint>			ClearPoints;
+var protected bool						bClearingRoomIsOnRight;
+var protected bool						bShouldStackUpBeforeClearing;
+var protected Formation					ClearFormation;
+var protected MoveInFormationGoal			FollowerMoveInFormationGoal;
+var protected DistanceSensor				LeaderDistanceSensor;
+var protected DistanceSensor				FollowerDistanceSensor;
+var protected MoveAndClearGoal			LeaderMoveAndClearGoal;
+var protected MoveAndClearGoal			FollowerMoveAndClearGoal;
+var protected Timer						WaitForFirstTwoOfficersTimer;
 
-var private StackUpGoal					ThirdOfficerStackUpGoal;
-var private StackUpGoal					FourthOfficerStackUpGoal;
+var protected StackUpGoal					ThirdOfficerStackUpGoal;
+var protected StackUpGoal					FourthOfficerStackUpGoal;
 
-var private DoorSideSensor				LeaderDoorSideSensor;
-var private DoorSideSensor				FollowerDoorSideSensor;
-var private bool						bLeaderReachedOtherSide;
-var private bool						bFollowerReachedOtherSide;
+var protected DoorSideSensor				LeaderDoorSideSensor;
+var protected DoorSideSensor				FollowerDoorSideSensor;
+var protected bool						bLeaderReachedOtherSide;
+var protected bool						bFollowerReachedOtherSide;
 
-var private int							NumClearPointsInClearingRoom;
+var protected int							NumClearPointsInClearingRoom;
 
-var private Pawn						Leader;
-var private Pawn						Follower;
-var private Pawn						DoorOpener;
+var protected Pawn						Leader;
+var protected Pawn						Follower;
+var protected Pawn						DoorOpener;
 var protected Pawn						Thrower;
 var protected Pawn						Breacher;
-var private Pawn						ThirdOfficer;
-var private Pawn						FourthOfficer;
+var protected Pawn						ThirdOfficer;
+var protected Pawn						FourthOfficer;
 
 var config float						InitialClearPauseTime;
 
@@ -61,7 +61,7 @@ var config float						FormationWalkThreshold;
 
 var config float						DoorOpenedFromSideDelayTime;
 
-var private SwatGrenadeProjectile		Projectile;
+var protected SwatGrenadeProjectile		Projectile;
 
 const kLeaderClearPointIndex      = 1;
 const kFollowerClearPointIndex    = 0;
@@ -97,17 +97,17 @@ function float selectionHeuristic( AI_Goal goal )
 function initAction(AI_Resource r, AI_Goal goal)
 {
 	super.initAction(r, goal);
-
+	log(self$" SquadMoveAndClearAction initAction- CommandOrigin: "$CommandOrigin);
 	ClearPoints = ISwatDoor(TargetDoor).GetClearPoints(CommandOrigin);
 
 	DetermineClearRoomSide();
 	bShouldStackUpBeforeClearing = ShouldStackUpBeforeClearing();
-//	log("bShouldStackUpBeforeClearing is: " @ bShouldStackUpBeforeClearing);
+	log("bShouldStackUpBeforeClearing is: " @ bShouldStackUpBeforeClearing);
 
 	FindNumberOfClearPointsInClearingRoom();
 }
 
-private function DetermineClearRoomSide()
+protected function DetermineClearRoomSide()
 {	
 	// if the command came from the left side of the door, we are clearing the right room...
 	// and vice versa.
@@ -291,7 +291,7 @@ function OnSensorMessage( AI_Sensor sensor, AI_SensorData value, Object userData
 	}
 }
 
-private function DeactivateDistanceSensors()
+protected function DeactivateDistanceSensors()
 {
 	if (LeaderDistanceSensor != None)
 	{
@@ -308,7 +308,7 @@ private function DeactivateDistanceSensors()
 	}
 }
 
-private function DeactivateDoorSideSensors()
+protected function DeactivateDoorSideSensors()
 {
 	if (LeaderDoorSideSensor != None)
 	{
@@ -411,7 +411,7 @@ function NotifyRegisteredOnProjectile(SwatGrenadeProjectile Grenade)
 //
 // Shared State Code (for subclasses)
 
-latent private function LatentMoveOfficerToActor(Pawn Officer, Actor Destination, int priority)
+latent protected function LatentMoveOfficerToActor(Pawn Officer, Actor Destination, int priority)
 {
 	while (! Officer.ReachedDestination(Destination))
 	{
@@ -545,7 +545,7 @@ function Pawn GetThrowingOfficer(EquipmentSlot ThrownItemSlot)
 	return None;
 }
 
-private latent function MoveOfficerToThrowingPoint(Pawn Officer, vector ThrowingPoint)
+protected latent function MoveOfficerToThrowingPoint(Pawn Officer, vector ThrowingPoint)
 {
 	// quick reject to see if the officer is already at that location
 	if (! Officer.ReachedLocation(ThrowingPoint))
@@ -565,7 +565,7 @@ private latent function MoveOfficerToThrowingPoint(Pawn Officer, vector Throwing
 	}
 }
 
-private function vector GetTargetDoorEdge(Pawn Officer)
+protected function vector GetTargetDoorEdge(Pawn Officer)
 {
 	local vector FarDoorEdge, NearDoorEdge, TargetEdge;
 
@@ -584,7 +584,7 @@ private function vector GetTargetDoorEdge(Pawn Officer)
 	return TargetEdge;
 }
 
-private function AIThrowSide GetThrowSide(vector CenterOpenPoint, vector ThrowingPoint)
+protected function AIThrowSide GetThrowSide(vector CenterOpenPoint, vector ThrowingPoint)
 {
 	local vector LeftDirection;
 
@@ -601,7 +601,7 @@ private function AIThrowSide GetThrowSide(vector CenterOpenPoint, vector Throwin
 	}
 }
 
-private function vector GetTargetThrowPoint(vector ThrowOrigin)
+protected function vector GetTargetThrowPoint(vector ThrowOrigin)
 {
 	local float AdditionalGrenadeThrowDistance;
 	local vector TargetThrowPoint;
@@ -921,7 +921,7 @@ function FindNumberOfClearPointsInClearingRoom()
 		log("NumClearPointsInClearingRoom is: " $ NumClearPointsInClearingRoom);
 }
 
-private function AddMoveAndClearGoalToList(Pawn Officer, ClearPoint Destination, bool bAnnounceClear)
+protected function AddMoveAndClearGoalToList(Pawn Officer, ClearPoint Destination, bool bAnnounceClear)
 {
 	local int NextOpenMoveAndClearIndex;
 
@@ -1180,7 +1180,7 @@ latent function MoveFirstTwoOfficersThroughDoor()
 //	log("leader is now moving and clearing, follower is following at time " $ resource.pawn().Level.TimeSeconds);
 }
 
-private function MoveUpSecondTwoOfficers()
+protected function MoveUpSecondTwoOfficers()
 {
 	local StackupPoint ThirdOfficerStackupPoint, FourthOfficerStackupPoint;
 	
@@ -1210,7 +1210,7 @@ private function MoveUpSecondTwoOfficers()
 	}
 }
 
-private function StartFollowerMoveAndClear()
+protected function StartFollowerMoveAndClear()
 {
 	// this function can't be called without a follower
 	assert(Follower != None);
@@ -1221,7 +1221,7 @@ private function StartFollowerMoveAndClear()
 	ActivateFollowingSensor();
 }
 
-private function PauseLeadingOfficer()
+protected function PauseLeadingOfficer()
 {
 	StopLeadingOfficer();
 	ISwatAI(Leader).AimAtActor(ClearPoints[kLeaderClearPointIndex]);
@@ -1236,20 +1236,20 @@ private function PauseLeadingOfficer()
 	}
 }
 
-private function ActivateFollowingSensor()
+protected function ActivateFollowingSensor()
 {
 	FollowerDistanceSensor = DistanceSensor(class'AI_Sensor'.static.activateSensor( self, class'DistanceSensor', AI_Resource(Follower.characterAI), 0, 1000000 )); 
 	FollowerDistanceSensor.SetParameters(ISwatDoor(TargetDoor).GetMoveAndClearPauseThreshold(), TargetDoor);
 }
 
-private function StopLeadingOfficer()
+protected function StopLeadingOfficer()
 {
 	LeaderMoveAndClearGoal.unPostGoal(self);
 	LeaderMoveAndClearGoal.Release();
 	LeaderMoveAndClearGoal = None;
 }
 
-private function PauseFollowingOfficer()
+protected function PauseFollowingOfficer()
 {
 //	log("pausing follower at time: " $ resource.pawn().Level.TimeSeconds);
 
@@ -1260,7 +1260,7 @@ private function PauseFollowingOfficer()
 	}
 }
 
-private function StopFollowingOfficer()
+protected function StopFollowingOfficer()
 {
 //	log("StopFollowingOfficer called");
 
@@ -1272,7 +1272,7 @@ private function StopFollowingOfficer()
 	}
 }
 
-latent private function MoveFirstTwoOfficersToClearPoints()
+latent protected function MoveFirstTwoOfficersToClearPoints()
 {
 	AddMoveAndClearGoalToList(Leader, ClearPoints[kLeaderClearPointIndex], true);
 
@@ -1360,7 +1360,7 @@ function ClearFirstTwoOfficersTimer()
 	}
 }
 
-private function ClearSecondTwoOfficersMoveUpBehavior()
+protected function ClearSecondTwoOfficersMoveUpBehavior()
 {
 	if (ThirdOfficerStackUpGoal != None)
 	{
@@ -1377,7 +1377,7 @@ private function ClearSecondTwoOfficersMoveUpBehavior()
 	}
 }
 
-private function ActivateDoorSideSensors()
+protected function ActivateDoorSideSensors()
 {
 	// only move up the second two officers if there's enough clear points in the room we're clearing
 	if (NumClearPointsInClearingRoom > 2)
@@ -1397,7 +1397,7 @@ private function ActivateDoorSideSensors()
 	}
 }
 
-private function HandleDoorSideSensorMessage(AI_Sensor DoorSideSensor)
+protected function HandleDoorSideSensorMessage(AI_Sensor DoorSideSensor)
 {
 	if (DoorSideSensor == LeaderDoorSideSensor)
 	{
@@ -1493,7 +1493,7 @@ protected function bool ShouldStackUpBeforeClearing()
 // by default we return false, subclasses should override completely
 protected function bool ShouldStackUpIfOfficersInRoomToClear() { return false; }
 
-private function bool AreAnyOfficersInRoomToClear()
+protected function bool AreAnyOfficersInRoomToClear()
 {
 	local int i;
 	local Pawn OfficerIter;
@@ -1522,7 +1522,7 @@ function TriggerStartedClearingSpeech(Pawn Officer)
 }
 
 // we only announce clear threshold if everyone's assignment is none, dead, arrested, or compliant
-private function bool ShouldAnnounceClearThreshold()
+protected function bool ShouldAnnounceClearThreshold()
 {
 	local int i;
 	local Pawn Officer, CurrentAssignment;

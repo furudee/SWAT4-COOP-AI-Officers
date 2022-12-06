@@ -21,7 +21,7 @@ var(HUD) EditInline GUIReticle                          Reticle                 
 //sp only hud components
 var(HUD) EditInline GUIDefaultCommandIndicator          DefaultCommand              "Text that displays the Command that will be given if the player presses the button to give the Default Command (right-mouse by default).";
 var(HUD) Editinline GUIClassicCommandInterfaceContainer ClassicCommandInterface     "A GUI component which contains the Classic Command Interface.";
-var(HUD) Editinline GUIGraphicCommandInterface          GraphicCommandInterface     "A GUI component which contains the Graphic Command Interface.";
+var(HUD) Editinline GUIGraphicCommandInterface          GraphicCommandInterfaceMod     "A GUI component which contains the Graphic Command Interface.";
 var(HUD) EditInline GUIExternalViewport                 ExternalViewport            "The gui component which contains the external viewport for team/sniper management.";
 var(HUD) EditInline GUIScrollText                       TrainingText                "A Text Box that displays the current information during Training.";
 #if IG_BATTLEROOM
@@ -30,7 +30,7 @@ var(HUD) EditInline GUIBattleRoom                       BattleRoom              
 
 //mp only hud components
 var(HUD) EditInline GUILabel                            PlayerTag                   "The text that pops up on top of players in multiplayer games.";
-var(HUD) EditInline GUILabel                            CommandInterfaceMenuPage    "Text that displays the currently selected CommandInterface menu page.";
+var(HUD) EditInline GUILabel                            CommandInterfaceMenuPage    "Text that displays the currently selected CommandInterfaceMod menu page.";
 
 //cinematic components
 var(SWATGui) private EditInline Config array<GUIComponent>  SequenceComponents;
@@ -60,7 +60,7 @@ function OnConstruct(GUIController MyController)
     Progress = GUIProgressBar(AddComponent("GUI.GUIProgressBar", "HUDPage_Progress"));
     Reticle = GUIReticle(AddComponent("SwatGame.GUIReticle", "HudReticle"));
     ClassicCommandInterface = GUIClassicCommandInterfaceContainer(AddComponent("SwatGame.GUIClassicCommandInterfaceContainer", "HUDPage_ClassicCommandInterface"));
-    GraphicCommandInterface = GUIGraphicCommandInterface(AddComponent("SwatGame.GUIGraphicCommandInterface", "HUDPage_GraphicCommandInterface"));
+    GraphicCommandInterfaceMod = GUIGraphicCommandInterface(AddComponent("SwatGame.GUIGraphicCommandInterface", "HUDPage_GraphicCommandInterface"));
     DefaultCommand = GUIDefaultCommandIndicator(AddComponent("SwatGame.GUIDefaultCommandIndicator", "HUDPage_defaultcommand"));
     CommandInterfaceMenuPage = GUILabel(AddComponent("GUI.GUILabel", "HUDPage_CommandInterfaceMenuPage"));
     ExternalViewport = GUIExternalViewport(AddComponent("SwatGame.GUIExternalViewport", "HUDPAGE_ExternalViewport"));
@@ -115,7 +115,7 @@ event Hide()
 
 function PreLevelChangeCleanup()
 {
-    GraphicCommandInterface.SetLogic( None );    
+    GraphicCommandInterfaceMod.SetLogic( None );    
 }
 
 function OnGameInit()
@@ -293,8 +293,8 @@ function CloseGenericComponents()
 {
     assert( ClassicCommandInterface != None );
     ClassicCommandInterface.Hide();
-    assert( GraphicCommandInterface != None );
-    GraphicCommandInterface.Hide();
+    assert( GraphicCommandInterfaceMod != None );
+    GraphicCommandInterfaceMod.Hide();
     assert( DefaultCommand != None );
     DefaultCommand.Hide();
     assert( CommandInterfaceMenuPage != None );
@@ -389,7 +389,7 @@ function OpenMPComponents()
 function UpdateCIVisibility()
 {
     local bool CurrentInterfaceIsEnabled, CCIShown;
-    local CommandInterface CurrentCommandInterface;
+    local CommandInterfaceMod CurrentCommandInterface;
 
     CurrentCommandInterface = SwatGamePlayerController(PlayerOwner()).GetCommandInterface();
     CurrentInterfaceIsEnabled = CurrentCommandInterface != None && CurrentCommandInterface.Enabled;
@@ -398,14 +398,14 @@ function UpdateCIVisibility()
 //log( self$"::UpdateCIVisibility() ... CCIShown = "$CCIShown$", CurrentCommandInterface = "$CurrentCommandInterface$", CurrentInterfaceIsEnabled = "$CurrentInterfaceIsEnabled );
                  
     assertWithDescription(CurrentCommandInterface == None || CurrentCommandInterface.IsA('ClassicCommandInterface') == CCIShown,
-        "[tcohen] HUDPageBase::UpdateCIVisibility() the GUIConfig and the GamePlayerController disagree about which CommandInterface is current.");
+        "[tcohen] HUDPageBase::UpdateCIVisibility() the GUIConfig and the GamePlayerController disagree about which CommandInterfaceMod is current.");
     
     assert(ClassicCommandInterface != None);
     ClassicCommandInterface.SetVisibility( CCIShown && CurrentInterfaceIsEnabled );
 
-    assert(GraphicCommandInterface != None);
-    GraphicCommandInterface.SetVisibility( !CCIShown && CurrentInterfaceIsEnabled );
-    GraphicCommandInterface.bUseExitPad = SwatGUIControllerBase(Controller).GuiConfig.bUseExitMenu;
+    assert(GraphicCommandInterfaceMod != None);
+    GraphicCommandInterfaceMod.SetVisibility( !CCIShown && CurrentInterfaceIsEnabled );
+    GraphicCommandInterfaceMod.bUseExitPad = SwatGUIControllerBase(Controller).GuiConfig.bUseExitMenu;
 
     assert(DefaultCommand != None);
     DefaultCommand.SetVisibility(CurrentInterfaceIsEnabled);
@@ -417,7 +417,7 @@ function UpdateCIVisibility()
         &&  (
                 SwatGUIControllerBase(Controller).GuiConfig.SwatGameRole == GAMEROLE_MP_Host
             ||  SwatGUIControllerBase(Controller).GuiConfig.SwatGameRole == GAMEROLE_MP_Client
-#if IG_SWAT_TESTING_MP_CI_IN_SP //tcohen: testing MP CommandInterface behavior in SP
+#if IG_SWAT_TESTING_MP_CI_IN_SP //tcohen: testing MP CommandInterfaceMod behavior in SP
             ||  true
 #endif
             )

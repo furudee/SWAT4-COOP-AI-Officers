@@ -34,11 +34,11 @@ overloaded function construct(
 // editorDisplay
 static function string editorDisplay(Name triggeredBy, Message filter)
 {
-	return "The Player gives an unexpected command with the CommandInterface";
+	return "The Player gives an unexpected command with the CommandInterfaceMod";
 }
 
 
 defaultproperties
 {
-	specificTo	= class'CommandInterface'
+	specificTo	= class'CommandInterfaceMod'
 }

@@ -193,7 +193,7 @@ simulated function string  GetViewportName()
 
 simulated function bool   CanIssueCommands()
 {
-    return false;
+    return true;
 }
 
 simulated function Vector  GetViewportLocation()
@@ -295,7 +295,7 @@ simulated event PostBeginPlay()
 simulated event PostNetBeginPlay()
 {
     super.PostNetBeginPlay();
-//    log( self$"---SwatPlayer::PostNetBeginPlay() called." );
+	log( self$"---SwatPlayer::PostNetBeginPlay() called." );
 }
 
 
@@ -825,7 +825,7 @@ function ServerRequestUse( SwatPlayer inUsePawn )
 {
     local SwatGamePlayerController current;
     local Controller iController, LocalPC;
-    local NetPlayer theNetPlayer; 
+    local NetPlayerMod theNetPlayer; 
     local HandheldEquipment Equipment;
 
     assert( Level.NetMode != NM_Standalone );
@@ -872,7 +872,7 @@ function ServerRequestUse( SwatPlayer inUsePawn )
         current = SwatGamePlayerController( iController );
         if ( current != None && current != LocalPC )
         {
-            theNetPlayer = NetPlayer( current.Pawn );
+            theNetPlayer = NetPlayerMod( current.Pawn );
             if ( theNetPlayer != None )
             {
                 log( self$" on server: calling ClientUse() by "$theNetPlayer );
@@ -907,7 +907,7 @@ function ServerRequestQualify( Actor DefaultFireFocusActor )
 {
     local SwatGamePlayerController current;
     local Controller i, LPC;
-    local NetPlayer theNetPlayer; //, QualifyTarget;
+    local NetPlayerMod theNetPlayer; //, QualifyTarget;
     local SwatAI theSwatAI;
     local Actor QualifyTarget;
     local HandheldEquipment theEquipment;
@@ -929,7 +929,7 @@ function ServerRequestQualify( Actor DefaultFireFocusActor )
     if ( theEquipment == None || !theEquipment.IsIdle() )
         return;
 
-    theNetPlayer = NetPlayer( DefaultFireFocusActor );
+    theNetPlayer = NetPlayerMod( DefaultFireFocusActor );
     if ( theNetPlayer != None )
     {
         if ( theEquipment.IsA( 'Cuffs' ) && !theNetPlayer.CanBeArrestedNow() )
@@ -959,7 +959,7 @@ function ServerRequestQualify( Actor DefaultFireFocusActor )
         current = SwatGamePlayerController( i );
         if ( current != None )
         {
-            theNetPlayer = NetPlayer( current.Pawn );
+            theNetPlayer = NetPlayerMod( current.Pawn );
             if ( (current != LPC) && (theNetPlayer != None) && theNetPlayer != self )
             {
                 //mplog( self$" on server: calling ClientStartQualify() by "$theNetPlayer$" on "$QualifyTarget );
@@ -3238,7 +3238,7 @@ simulated function String GetHumanReadableName()
     return Super.GetHumanReadableName();
 }
 
-// Override in NetPlayer for network games. For standalone games, always
+// Override in NetPlayerMod for network games. For standalone games, always
 // return false.
 simulated function bool IsTheVIP()
 {
@@ -3496,13 +3496,13 @@ simulated event UnTriggerNonLethaledEffectEvent( Name EffectEventName )
 
 simulated function Name GetPlayerTag()
 {
-    if( NetPlayer(Self) == None )
+    if( NetPlayerMod(Self) == None )
         return '';
         
-    if( NetPlayer(Self).IsTheVIP() )
+    if( NetPlayerMod(Self).IsTheVIP() )
         return 'VIP';
 
-    return SwatRepo(Level.GetRepo()).GuiConfig.GetTagForVoiceType( NetPlayer(Self).VoiceType );
+    return SwatRepo(Level.GetRepo()).GuiConfig.GetTagForVoiceType( NetPlayerMod(Self).VoiceType );
 }
 
 // IEffectObserver implementation

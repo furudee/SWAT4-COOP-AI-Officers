@@ -27,7 +27,7 @@ simulated function OnPlayerUse()
     // In a standalone game we immediately begin qualifying. In a network
     // game, we have to ask the server for permission before we begin
     // qualifying. When the server replies and permits us to begin,
-    // the NetPlayer will call NetBeginQualifying below.
+    // the NetPlayerMod will call NetBeginQualifying below.
     if ( Level.NetMode == NM_Standalone )
     {
         if (!CanUseOnOtherNow(DefaultFireFocusActor))

@@ -84,21 +84,21 @@ simulated event ReplicatedPrimaryWeaponClassInfoOnChanged()
     //local Vector NoDirection;
     
     if (Level.GetEngine().EnableDevTools)
-        mplog( self$"---SwatEnemy::ReplicatedPrimaryWeaponClassInfoOnChanged()." );
+        log( self$"---SwatEnemy::ReplicatedPrimaryWeaponClassInfoOnChanged()." );
 
     if( PrimaryWeapon != None )
     {
-        mplog( "...destroying previous" );
+        log( "...destroying previous" );
         PrimaryWeapon.Destroy();
     }
 
     if ( ReplicatedPrimaryWeaponClass != None )
     {
-        //mplog( "...spawning");
+        log( "...spawning");
         PrimaryWeapon = Spawn( ReplicatedPrimaryWeaponClass, self );
         if (PrimaryWeapon != None)
         {
-            //mplog( "...calling OnGivenToOwner()" );
+            log( "...calling OnGivenToOwner()" );
             PrimaryWeapon.AmmoClass = ReplicatedPrimaryWeaponAmmoClass;
             PrimaryWeapon.OnGivenToOwner();
         }
@@ -106,47 +106,51 @@ simulated event ReplicatedPrimaryWeaponClassInfoOnChanged()
         // AI's always equip their primary weapon if they have one.
         if (PrimaryWeapon != None)
         {
-            //mplog( "...caling Equip()" );
+            log( "...caling Equip()" );
             PrimaryWeapon.Equip();
         }
     }
+	log("SWAT ENEMY -- ReplicatedPrimaryWeaponClass "$ReplicatedPrimaryWeaponClass$" ReplicatedPrimaryWeaponAmmoClass "$ReplicatedPrimaryWeaponAmmoClass$" ReplicatedBackupWeaponClass "$ReplicatedBackupWeaponClass$" ReplicatedBackupWeaponAmmoClass "$ReplicatedBackupWeaponAmmoClass);
+
 }
 
 simulated event ReplicatedBackupWeaponClassInfoOnChanged()
 {
     //local Vector NoDirection;
 
-    mplog( self$"---SwatEnemy::ReplicatedBackupWeaponClassInfoOnChanged()." );
+    log( self$"---SwatEnemy::ReplicatedBackupWeaponClassInfoOnChanged()." );
 
     if( BackupWeapon != None )
     {
-        mplog( "...destroying previous" );
+        log( "...destroying previous" );
         BackupWeapon.Destroy();
     }
 
     if ( ReplicatedBackupWeaponClass != None )
     {
-        mplog( "...spawning");
+        log( "...spawning");
         BackupWeapon = Spawn( ReplicatedBackupWeaponClass, self );
         if (BackupWeapon != None)
         {
-            mplog( "...calling OnGivenToOwner()" );
+            log( "...calling OnGivenToOwner()" );
             BackupWeapon.AmmoClass = ReplicatedBackupWeaponAmmoClass;
             BackupWeapon.OnGivenToOwner();
         }
 
         if ( DesiredAIEquipment == AIE_Backup && BackupWeapon != None )
         {
-            mplog( "...caling Equip()" );
+            log( "...caling Equip()" );
             BackupWeapon.Equip();
         }
     }
+	log("SWAT ENEMY -- ReplicatedPrimaryWeaponClass "$ReplicatedPrimaryWeaponClass$" ReplicatedPrimaryWeaponAmmoClass "$ReplicatedPrimaryWeaponAmmoClass$" ReplicatedBackupWeaponClass "$ReplicatedBackupWeaponClass$" ReplicatedBackupWeaponAmmoClass "$ReplicatedBackupWeaponAmmoClass);
+
 }
 
 
 simulated event OnDesiredAIEquipmentChanged()
 {
-    mplog( self$"---SwatEnemy::OnDesiredAIEquipmentChanged(). NewValue="$DesiredAIEquipment );
+    log( self$"---SwatEnemy::OnDesiredAIEquipmentChanged(). NewValue="$DesiredAIEquipment );
 
     if ( DesiredAIEquipment == AIE_Backup )
     {
@@ -155,6 +159,8 @@ simulated event OnDesiredAIEquipmentChanged()
             BackupWeapon.Equip();
         }
     }
+	log("SWAT ENEMY -- ReplicatedPrimaryWeaponClass "$ReplicatedPrimaryWeaponClass$" ReplicatedPrimaryWeaponAmmoClass "$ReplicatedPrimaryWeaponAmmoClass$" ReplicatedBackupWeaponClass "$ReplicatedBackupWeaponClass$" ReplicatedBackupWeaponAmmoClass "$ReplicatedBackupWeaponAmmoClass);
+
 }
 
 
@@ -166,17 +172,17 @@ simulated event Destroyed()
 
 simulated function DestroyEquipment()
 {
-    mplog( self$"---SwatEnemy::DestroyEquipment()." );
+    log( self$"---SwatEnemy::DestroyEquipment()." );
 
     //force destroy weapons when pawn is destroyed
     if( PrimaryWeapon != None )
     {
-        mplog( "...destroying primary weapon" );
+        log( "...destroying primary weapon" );
         PrimaryWeapon.Destroy();
     }
     if( BackupWeapon != None )
     {
-        mplog( "...destroying backup weapon" );
+        log( "...destroying backup weapon" );
         BackupWeapon.Destroy();
     }
 

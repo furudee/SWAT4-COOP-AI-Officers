@@ -1573,7 +1573,7 @@ simulated event TakeDamage( int Damage, Pawn EventInstigator, vector HitLocation
     PostTakeDamage(Damage, EventInstigator, HitLocation, Momentum, DamageType);
 }
 
-#if IG_SWAT //dkaplan- we overwrite TakeDamageEffectsHook() in NetPlayer to allow for a broader range of hit effects
+#if IG_SWAT //dkaplan- we overwrite TakeDamageEffectsHook() in NetPlayerMod to allow for a broader range of hit effects
             // swat wants to know about all the same info (like damage type) as everybody else
 simulated function TakeDamageEffectsHook( int Damage, Pawn EventInstigator, vector HitLocation, vector Momentum, class<DamageType> DamageType )
 #else

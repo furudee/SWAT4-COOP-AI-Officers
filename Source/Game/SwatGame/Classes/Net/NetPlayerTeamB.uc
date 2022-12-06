@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
-class NetPlayerTeamB extends NetPlayer;
+class NetPlayerTeamB extends NetPlayerMod;
 
 
 simulated function int GetTeamNumber()

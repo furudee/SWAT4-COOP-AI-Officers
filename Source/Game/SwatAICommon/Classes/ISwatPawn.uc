@@ -18,6 +18,9 @@ function bool DoesBelieveDoorLocked(Door inDoor);
 function bool DoesBelieveDoorWedged(Door inDoor);
 function SetDoorLockedBelief(Door inDoor, bool bBelievesDoorLocked);
 function SetDoorWedgedBelief(Door inDoor, bool bBelievesDoorWedged);
+simulated function ClientSetDoorLockedBelief(Door inDoor, bool bBelievesDoorLocked);
+simulated function ClientSetDoorWedgedBelief(Door inDoor, bool bBelievesDoorWedged);
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //

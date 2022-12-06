@@ -21,7 +21,7 @@ var private RotateTowardRotationGoal				CurrentRotateTowardRotationGoal;
 var private AimAroundGoal							CurrentAimAroundGoal;
 
 // internal move
-var private array<NavigationPoint>					ClearRoute;
+var  array<NavigationPoint>							ClearRoute;
 var private int										CurrentClearRouteIndex;
 var private bool									bPauseMovement;
 

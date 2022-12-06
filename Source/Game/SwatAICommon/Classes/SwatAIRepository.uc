@@ -7,22 +7,23 @@ class SwatAIRepository extends Engine.AIRepository
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Singleton Variables
-var private IdleActionsList					IdleActions;
-var private InitialReactionsList			InitialReactions;
+var protected IdleActionsList					IdleActions;
+var protected InitialReactionsList			InitialReactions;
 
 // Script-declared TMaps are always transient even if not declared so, hence
 // we need to serialize this native to ensure references are counted properly
 // during Garbage Collection
-var private transient const map<name, NavigationPointList>	RoomNavigationPoints;
+var protected transient const map<name, NavigationPointList>	RoomNavigationPoints;
 
-var private CharacterTypesList				CharacterTypes;
+var protected CharacterTypesList				CharacterTypes;
 
-var private ElementSquadInfo				ElementSquad;
-var private RedSquadInfo					RedSquad;
-var private BlueSquadInfo					BlueSquad;
+var protected ElementSquadInfo				ElementSquad;
+var protected RedSquadInfo					RedSquad;
+var protected BlueSquadInfo					BlueSquad;
 	
-var private Hive							HiveMind;
-var private Pawn							CurrentEnemyInHostageConversation;
+var protected Hive							HiveMind;
+var protected Pawn							CurrentEnemyInHostageConversation;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -30,6 +31,7 @@ var private Pawn							CurrentEnemyInHostageConversation;
 
 event PreBeginPlay()
 {
+	log("swatairepository-- prebeginplay");
     Super.PreBeginPlay();
 
 	CreateCharacterTypesList();
@@ -42,6 +44,7 @@ event PreBeginPlay()
 
 event PostBeginPlay()
 {
+	log("swatairepository-- postbeginplay");
 	Super.PostBeginPlay();
 }
 
@@ -49,7 +52,7 @@ event PostBeginPlay()
 //
 // Character Types
 
-private function CreateCharacterTypesList()
+protected function CreateCharacterTypesList()
 {
 	CharacterTypes = Spawn(class'CharacterTypesList', self);
 	assert(CharacterTypes != None);
@@ -90,7 +93,7 @@ function bool VerifyCharacterTypeExists(name inCharacterType)
 // Officer Squads
 
 // Hive
-private function CreateHive()
+protected function CreateHive()
 {
 	HiveMind = new(self) class'Hive'();
 	assert(HiveMind != None);
@@ -101,7 +104,7 @@ private function CreateHive()
 function Hive GetHive() { return HiveMind; }
 
 // Tyrion Squads
-private function CreateOfficerSquads()
+protected function CreateOfficerSquads()
 {
 	// create each squad
 	ElementSquad = Spawn(class'ElementSquadInfo');
@@ -141,11 +144,12 @@ function bool IsOfficerMovingAndClearing(Pawn Officer)
 //
 // Door Beliefs Notifications
 
-function UpdateDoorKnowledgeForOfficers(Door TargetDoor)
+simulated function UpdateDoorKnowledgeForOfficers(Door TargetDoor)
 {
 	local ISwatDoor SwatTargetDoor;
 	local bool bDoorBroken, bDoorLocked, bDoorWedged;
 
+	log(self$" UpdateDoorKnowledgeForOfficers");
 	assert(TargetDoor != None);
 	SwatTargetDoor = ISwatDoor(TargetDoor);
 	assert(SwatTargetDoor != None);
@@ -180,12 +184,19 @@ function UpdateDoorKnowledgeForOfficers(Door TargetDoor)
 	}
 }
 
-private function NotifyOfficersDoorLocked(Door TargetDoor)
+simulated protected function NotifyOfficersDoorLocked(Door TargetDoor)
 {
 	local int i;
 	local Pawn OfficerIter;
+	local Pawn Player;
+	local Controller Iter;
+	local ISwatDoor SwatTargetDoor;
 
+	SwatTargetDoor = ISwatDoor(TargetDoor);
+	log(self$" NotifyOfficersDoorLocked");
 	// notify all of the AI Officers.
+	
+	
 	for(i=0; i<GetElementSquad().pawns.length; ++i)
 	{
 		OfficerIter = GetElementSquad().pawns[i];
@@ -198,13 +209,29 @@ private function NotifyOfficersDoorLocked(Door TargetDoor)
 
 	// notify the player Officer
 	// note that this could be BAD if there are ever more than one players
-	ISwatPawn(Level.GetLocalPlayerController().Pawn).SetDoorLockedBelief(TargetDoor, true);
+	
+	for(Iter = Level.ControllerList; Iter != None; Iter=Iter.NextController)
+	{
+		if (Iter.IsA('PlayerController'))
+		{
+			Player = Iter.Pawn;
+			log("Player: "$Player);
+			if(Player != None)
+				ISwatPawn(Player).SetDoorLockedBelief(TargetDoor, true);
+				//ISwatPawn(Player).ClientSetDoorLockedBelief(TargetDoor, true);
+			SwatTargetDoor.OnLocked();
+		}	
+	}
+	
 }
 
-function NotifyOfficersDoorWedged(Door TargetDoor)
+simulated function NotifyOfficersDoorWedged(Door TargetDoor)
 {
 	local int i;
 	local Pawn OfficerIter;
+	local Pawn Player;
+	local Controller Iter;
+
 
 	// notify all of the AI Officers.
 	for(i=0; i<GetElementSquad().pawns.length; ++i)
@@ -219,13 +246,24 @@ function NotifyOfficersDoorWedged(Door TargetDoor)
 
 	// notify the player Officer
 	// note that this could be BAD if there are ever more than one players
-	ISwatPawn(Level.GetLocalPlayerController().Pawn).SetDoorWedgedBelief(TargetDoor, true);
+	for(Iter = Level.ControllerList; Iter != None; Iter=Iter.NextController)
+	{
+		if (Iter.IsA('PlayerController'))
+		{
+			Player = Iter.Pawn;
+			if(Player != None)
+				ISwatPawn(Player).SetDoorWedgedBelief(TargetDoor, true);
+			//ISwatPawn(Player).ClientSetDoorWedgedBelief(TargetDoor, true);
+		}	
+	}	
 }
 
-function NotifyOfficersDoorWedgeRemoved(Door TargetDoor)
+simulated function NotifyOfficersDoorWedgeRemoved(Door TargetDoor)
 {
 	local int i;
 	local Pawn OfficerIter;
+	local Pawn Player;
+	local Controller Iter;
 
 	// notify all of the AI Officers.
 	for(i=0; i<GetElementSquad().pawns.length; ++i)
@@ -237,16 +275,27 @@ function NotifyOfficersDoorWedgeRemoved(Door TargetDoor)
 			ISwatPawn(OfficerIter).SetDoorWedgedBelief(TargetDoor, false);
 		}
 	}
+	for(Iter = Level.ControllerList; Iter != None; Iter=Iter.NextController)
+	{
+		if (Iter.IsA('PlayerController'))
+		{
+			Player = Iter.Pawn;
+			if(Player != None)
+				ISwatPawn(Player).SetDoorWedgedBelief(TargetDoor, false);
+			//ISwatPawn(Player).ClientSetDoorWedgedBelief(TargetDoor, false);
+		}	
+	}
 
 	// notify the player Officer
 	// note that this could be BAD if there are ever more than one players
-	ISwatPawn(Level.GetLocalPlayerController().Pawn).SetDoorWedgedBelief(TargetDoor, false);
 }
 
-private function NotifyOfficersDoorCanOpen(Door TargetDoor)
+simulated protected function NotifyOfficersDoorCanOpen(Door TargetDoor)
 {
 	local int i;
 	local Pawn OfficerIter;
+	local Controller Iter;
+	local Pawn Player;
 
 	// notify all of the AI Officers.
 	for(i=0; i<GetElementSquad().pawns.length; ++i)
@@ -262,15 +311,27 @@ private function NotifyOfficersDoorCanOpen(Door TargetDoor)
 
 	// notify the player Officer
 	// note that this could be BAD if there are ever more than one players
-	ISwatPawn(Level.GetLocalPlayerController().Pawn).SetDoorLockedBelief(TargetDoor, false);
-	ISwatPawn(Level.GetLocalPlayerController().Pawn).SetDoorWedgedBelief(TargetDoor, false);
+	for(Iter = Level.ControllerList; Iter != None; Iter=Iter.NextController)
+	{
+		if (Iter.IsA('PlayerController'))
+		{
+			Player = Iter.Pawn;
+			if(Player != None)
+			{
+				ISwatPawn(Player).SetDoorLockedBelief(TargetDoor, false);
+				ISwatPawn(Player).SetDoorWedgedBelief(TargetDoor, false);
+				//ISwatPawn(Player).ClientSetDoorLockedBelief(TargetDoor, false);
+				//ISwatPawn(Player).ClientSetDoorWedgedBelief(TargetDoor, false);
+			}
+		}	
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Idle Actions
 
-private function CreateIdleActionClassesList()
+protected function CreateIdleActionClassesList()
 {
     IdleActions = Spawn(class'IdleActionsList', self);
     assert(IdleActions != None);
@@ -285,7 +346,7 @@ function IdleActionsList GetIdleActions()
 //
 // Initial Reactions
 
-private function CreateInitialReactionClassesList()
+protected function CreateInitialReactionClassesList()
 {
 	InitialReactions = Spawn(class'InitialReactionsList', self);
 	assert(InitialReactions != None);
@@ -537,3 +598,8 @@ native event NavigationPoint FindClosestOfNavigationPointClass(class<NavigationP
 
 native function bool DoesRoomContainAIs(name RoomName, optional name SpecifiedAIClassName, optional bool bMustMoveFreely);
 native function Pawn GetClosestUncompliantViewableAIInRoom(name RoomName, Pawn TestCharacter, optional name SpecifiedAIClassName);
+
+defaultproperties 
+{
+	bAlwaysRelevant=true
+}

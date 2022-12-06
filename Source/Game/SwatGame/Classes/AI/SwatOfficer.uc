@@ -18,18 +18,18 @@ var protected OfficerLoadOut LoadOut;
 
 var localized String OfficerFriendlyName;
 
-var private Formation CurrentFormation;
+var protected Formation CurrentFormation;
 
-var private SwatDoor  DoorToBlowC2On;
+var protected SwatDoor  DoorToBlowC2On;
 
 // config
-var private config float	 MinTimeToFireFullAuto;
-var private config float	 MaxTimeToFireFullAuto;
+var protected config float	 MinTimeToFireFullAuto;
+var protected config float	 MaxTimeToFireFullAuto;
 
-var private config Material  ViewportOverlayMaterial;
+var protected config Material  ViewportOverlayMaterial;
 
-var private float			 NextTimeCanReactToHarmlessShotByPlayer;
-var private config float	 DeltaReactionTimeBetweenHarmlessShot;
+var protected float			 NextTimeCanReactToHarmlessShotByPlayer;
+var protected config float	 DeltaReactionTimeBetweenHarmlessShot;
 
 // When the officer stops avoiding collisions, this timer is started. When the
 // timer is triggered, the officer unsets the kUBABCI_AvoidCollisions upper
@@ -39,6 +39,7 @@ var Timer NotifyStoppedMovingTimer;
 
 const kMinNotifyStoppedMovingTime = 0.75;
 const kMaxNotifyStoppedMovingTime = 1.25;
+
 
 cpptext
 {
@@ -58,7 +59,13 @@ cpptext
         return Super::WillCollide(otherActor, otherActorTestLocation);
     }
 }
-
+/*
+replication
+{
+    reliable if ( bNetDirty && Role == ROLE_Authority )
+		LoadOut;
+}
+*/
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Engine Events
@@ -67,40 +74,59 @@ event PreBeginPlay()
 {
 	Super.PreBeginPlay();
 
-	AddToSquads();
-
-	// setup the loadout for our officer (dependent on our type)
-	InitLoadOut(OfficerLoadOutType);
+	//if(Level.NetMode != NM_Client)
+	//{
+		AddToSquads();
+	
+		// setup the loadout for our officer (dependent on our type)
+		InitLoadOut(OfficerLoadOutType);
+	//}
 }
 
-event PostBeginPlay()
+simulated event PostBeginPlay()
 {
     Super.PostBeginPlay();
-    // Notify the hive that our swat officer has been fully-constructed
-    SwatAIRepository(Level.AIRepo).GetHive().NotifyOfficerConstructed(self);
-    
-    UpdateOfficerLOD();
+	//if(Level.NetMode != NM_Client)
+	//{
+		// Notify the hive that our swat officer has been fully-constructed
+		SwatAIRepository(Level.AIRepo).GetHive().NotifyOfficerConstructed(self);
+		
+		UpdateOfficerLOD();
 
-    NotifyStoppedMovingTimer = Spawn(class'Timer');
-    assert(NotifyStoppedMovingTimer  != None);
-    NotifyStoppedMovingTimer.TimerDelegate = NotifyStoppedMovingTimerCallback;
+		NotifyStoppedMovingTimer = Spawn(class'Timer');
+		assert(NotifyStoppedMovingTimer  != None);
+		NotifyStoppedMovingTimer.TimerDelegate = NotifyStoppedMovingTimerCallback;
+	//}
+	/*
+	if(Level.NetMode == NM_Client)
+		InitLoadOut(OfficerLoadOutType);
+	
+	log("OFFICER-PBG END-- AIREPO-HIVE-NUMOFFICERS: "$SwatAIRepository(Level.AIRepo).GetHive().GetNumOfficers()); 
+	log("OFFICER-PBG END-- AIREPO: "$Level.AIRepo);
+	log("OFFICER-PBG END-- LEVEL: "$Level);
+	
+	log("OFFICER-PBG END-- VIEWPORTOWNERLEVEL: "$SwatPlayer(Level.GetLocalPlayerController().Pawn).GetViewPortOwner().Level); 
+	log("OFFICER-PBG END-- VIEWPORTLEVEL: "$Viewport.Actor.Level); 
+	*/
 }
 
-event Destroyed()
+simulated event Destroyed()
 {
 	warn("Officer " $ Name $" was destroyed!");
+	if(Level.NetMode != NM_Client)
+	{
 
-    SwatAIRepository(Level.AIRepo).GetHive().NotifyOfficerDestroyed(self);
+		SwatAIRepository(Level.AIRepo).GetHive().NotifyOfficerDestroyed(self);
 
-	// removes us from all the squads
-	RemoveFromSquads();
+		// removes us from all the squads
+		RemoveFromSquads();
 
-    if (NotifyStoppedMovingTimer != None)
-    {
-        NotifyStoppedMovingTimer.Destroy();
-        NotifyStoppedMovingTimer = None;
-    }
-
+		if (NotifyStoppedMovingTimer != None)
+		{
+			NotifyStoppedMovingTimer.Destroy();
+			NotifyStoppedMovingTimer = None;
+		}
+	}
     Super.Destroyed();
 }
 
@@ -251,7 +277,7 @@ function bool IsAttackingPlayer()
 //
 // Damage / Death
 
-function NotifyHit(float Damage, Pawn HitInstigator)
+simulated function NotifyHit(float Damage, Pawn HitInstigator)
 {
 	local SwatPlayer PlayerInstigator;
     local bool       IsHitByPlayer;
@@ -261,7 +287,7 @@ function NotifyHit(float Damage, Pawn HitInstigator)
 
 	// the following doesn't need to be networked because we have no Officers in Coop
     if ( IsHitByPlayer )
-	    PlayerInstigator = SwatPlayer(Level.GetLocalPlayerController().Pawn);
+	    PlayerInstigator = SwatPlayer(HitInstigator);
     
 	if ((PlayerInstigator != None) && !IsIncapacitated())
 	{
@@ -274,7 +300,7 @@ function NotifyHit(float Damage, Pawn HitInstigator)
 }
 
 // overridden from SwatAI
-function NotifyBecameIncapacitated(Pawn Incapacitator)
+simulated function NotifyBecameIncapacitated(Pawn Incapacitator)
 {
     local FiredWeapon CurrentWeapon;
 
@@ -343,7 +369,7 @@ event NotifyStoppedMoving()
     }
 }
 
-simulated function NotifyStoppedMovingTimerCallback()
+function NotifyStoppedMovingTimerCallback()
 {
     UnsetUpperBodyAnimBehavior(kUBABCI_AvoidCollisions);
 }
@@ -460,7 +486,7 @@ simulated function        HandleReload();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-function PlayTurnAwayAnimation()
+simulated function PlayTurnAwayAnimation()
 {
 	local name TurnAwayAnimation;
 
@@ -475,10 +501,12 @@ function PlayTurnAwayAnimation()
 //
 // Loadout
 
-private function InitLoadOut( String LoadOutName )
+simulated function InitLoadOut( String LoadOutName )
 {
     local DynamicLoadOutSpec LoadOutSpec;
     local CustomScenario CustomScen;
+	
+	log("SWATOFFICER-INITLOADOUT");
     
 	LoadOut = Spawn(class'OfficerLoadOut', self, name("Default"$LoadOutName));
 	assert(LoadOut != None);
@@ -528,9 +556,10 @@ private function InitLoadOut( String LoadOutName )
 // a. not all subclasses of the common base class will use this functionality.
 // b. the functionality will most likely diverge sometime down the road, possibly causing maintenance headaches
 // c. we don't have multiple inheritance
-private function ReceiveLoadOut()
+simulated function ReceiveLoadOut()
 {
 	assert(LoadOut != None);
+	log("swatofficer receiveloadout start");
 
     log( "------LoadOut.Owner="$LoadOut.Owner );
 
@@ -554,6 +583,7 @@ private function ReceiveLoadOut()
 
 	// make sure we have the correct animations to go with our loadout
 	ChangeAnimation();
+	log("SWATOFFICER-RECEIVELOADOUT end "$LoadOut);
 }
 
 //Pawn override
@@ -647,7 +677,7 @@ protected function bool CanPawnUseLowReady()
 simulated function EAnimationSet GetStandingInjuredAnimSet()    { return kAnimationSetOfficerInjuredStanding; }
 simulated function EAnimationSet GetCrouchingInjuredAnimSet()   { return kAnimationSetOfficerInjuredCrouching; }
 
-function EUpperBodyAnimBehavior GetMovementUpperBodyAimBehavior()
+simulated function EUpperBodyAnimBehavior GetMovementUpperBodyAimBehavior()
 {
 	// by default we use low ready when moving
 	return kUBAB_LowReady;
@@ -677,12 +707,12 @@ protected function float GetLengthOfTimeToFireFullAuto()
 //
 // ISwatOfficer implementation
 
-function FiredWeapon GetPrimaryWeapon()
+simulated function FiredWeapon GetPrimaryWeapon()
 {
     return LoadOut.GetPrimaryWeapon();
 }
 
-function FiredWeapon GetBackupWeapon()
+simulated function FiredWeapon GetBackupWeapon()
 {
     return LoadOut.GetBackupWeapon();
 }
@@ -693,7 +723,7 @@ function bool HasUsableWeapon()
 		    ((GetBackupWeapon() != None) && !GetBackupWeapon().IsEmpty()));
 }
 
-native function OfficerCommanderAction GetOfficerCommanderAction();
+simulated native function OfficerCommanderAction GetOfficerCommanderAction();
 
 function OfficerSpeechManagerAction	GetOfficerSpeechManagerAction()
 {
@@ -820,7 +850,7 @@ simulated function name GetEffectEventForReportResponseFromTOCWhenNotIncapacitat
 //
 // Harmless Shots
 
-private function TriggerHarmlessShotSpeech()
+protected function TriggerHarmlessShotSpeech()
 {
 	if (Level.TimeSeconds > NextTimeCanReactToHarmlessShotByPlayer)
 	{
@@ -907,5 +937,9 @@ defaultproperties
 
 	bAlwaysUseWalkAimErrorWhenMoving=true
 	bAlwaysTestPathReachability=true
+	bNoRepMesh=false
+	bReplicateAnimations=true
+	//bSkipActorPropertyReplication=false
+	//bAlwaysRelevant=true
 }
 

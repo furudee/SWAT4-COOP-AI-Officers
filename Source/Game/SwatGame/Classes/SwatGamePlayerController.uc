@@ -108,7 +108,7 @@ var private Timer FocusPollTimer;
 var private name LastFocusSource;
 
 // PlayerFocusInterface support...
-// Carlos: Refactored the seperate FireInterface/UseInterface/CommandInterface into an array of PlayerFocusInterfaces
+// Carlos: Refactored the seperate FireInterface/UseInterface/CommandInterfaceMod into an array of PlayerFocusInterfaces
 
 enum EFocusInterface
 {
@@ -139,7 +139,7 @@ var config private array<PlayerFocusInterfaceInfo> FocusInterfaceInfos; // List 
                                                                         // Should be populated in defaultproperties.
 var private array<PlayerFocusInterface> FocusInterfaces;                // List of currently active player focus interfaces.
 
-var private CommandInterface CurrentCommandInterface;
+var private CommandInterfaceMod CurrentCommandInterface;
 
 enum NumberRow
 {
@@ -150,8 +150,8 @@ enum NumberRow
 /*  TMC 1/23/2004 disabled support for GCIOpen & GiveCommand on the same button (GCIOpen after delay)
 var input byte bGCIOpen;                //the Engine will set to non-zero while the GrapihcCommandInterface Open button (right-mouse) is down
 var bool GiveCommandIsDown;             //keep track of button transitions
-var Timer GiveCommandTimer;             //manage delay from the time bGCIOpen is pressed until the GraphicCommandInterface is called to Open()
-//the delay (in seconds) after the GiveCommand button is pressed, before the GraphicCommandInterface opens...
+var Timer GiveCommandTimer;             //manage delay from the time bGCIOpen is pressed until the GraphicCommandInterfaceMod is called to Open()
+//the delay (in seconds) after the GiveCommand button is pressed, before the GraphicCommandInterfaceMod opens...
 //if the GiveCommand button is released before this time elapses, then the Default command is given,
 // and the GCI does not open.
 var config float GraphicCommandInterfaceDelay;  
@@ -307,6 +307,9 @@ replication
         ServerRequestThrowPrep, ServerEndThrow, ServerRequestQualifyInterrupt, ServerRequestInteract,
         ServerRequestViewportChange, ServerSetAlwaysRun, ServerActivateOfficerViewport,
         ServerGiveCommand, ServerIssueCompliance, ServerOnEffectStopped, ServerSetVoiceType;
+		
+	reliable if(Role < ROLE_Authority)
+		ServerOrderOfficers;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -445,10 +448,10 @@ simulated function ResumePlayerFocusInterfaces()
 
 simulated function SetCommandInterface(ECommandInterfaceStyle Style)
 {
-    local CommandInterface LastCommandInterface, ClassicCommandInterface, GraphicCommandInterface;
+    local CommandInterfaceMod LastCommandInterface, ClassicCommandInterface, GraphicCommandInterfaceMod;
 
-    ClassicCommandInterface = CommandInterface(FocusInterfaces[int(EFocusInterface.Focus_ClassicCommand)]);
-    GraphicCommandInterface = CommandInterface(FocusInterfaces[int(EFocusInterface.Focus_GraphicCommand)]);
+    ClassicCommandInterface = CommandInterfaceMod(FocusInterfaces[int(EFocusInterface.Focus_ClassicCommand)]);
+    GraphicCommandInterfaceMod = CommandInterfaceMod(FocusInterfaces[int(EFocusInterface.Focus_GraphicCommand)]);
 
     LastCommandInterface = CurrentCommandInterface;
 
@@ -458,7 +461,7 @@ simulated function SetCommandInterface(ECommandInterfaceStyle Style)
             CurrentCommandInterface = ClassicCommandInterface;
             break;
         case CommandInterface_Graphic:
-            CurrentCommandInterface = GraphicCommandInterface;
+            CurrentCommandInterface = GraphicCommandInterfaceMod;
             break;
         default:
             assertWithDescription(false,
@@ -468,12 +471,12 @@ simulated function SetCommandInterface(ECommandInterfaceStyle Style)
     //dkaplan: this assertion is invalid- CurrentCommandInterface may be None in multiplayer if gametype != CO-OP
     //Assert( CurrentCommandInterface != None );
     
-    log("CommandInterface set to "$GetCommandInterface());
+    log("CommandInterfaceMod set to "$GetCommandInterface());
 
     if (CurrentCommandInterface != LastCommandInterface)
     {
         ClassicCommandInterface.OnSelectedCommandInterfaceChanged(CurrentCommandInterface);
-        GraphicCommandInterface.OnSelectedCommandInterfaceChanged(CurrentCommandInterface);
+        GraphicCommandInterfaceMod.OnSelectedCommandInterfaceChanged(CurrentCommandInterface);
 
         UpdateFocus();
     }
@@ -899,7 +902,7 @@ function ServerActivateOfficerViewport( bool ShouldActivate )
 
     if ( ShouldActivate )
     {
-        if( Pawn == None || NetPlayer(Pawn) == None )
+        if( Pawn == None || NetPlayerMod(Pawn) == None )
             return;
             
         ServerOfficerViewport = ViewportManager;
@@ -1087,7 +1090,7 @@ exec function Fire()
 // Executes only on the client.
 simulated function ClientBeginFiringWeapon( Pawn PawnWhoFired, EquipmentSlot ItemSlot, FireMode CurrentFireMode )
 {
-    local NetPlayer theNetPlayer;
+    local NetPlayerMod theNetPlayer;
     local FiredWeapon theFiredWeapon;
     
     // temp, for testing.
@@ -1099,7 +1102,7 @@ simulated function ClientBeginFiringWeapon( Pawn PawnWhoFired, EquipmentSlot Ite
     if ( PawnWhoFired != None )
     {
         //mplog( self$"---SGPC::ClientBeginFiringWeapon(). PawnWhoFired="$PawnWhoFired$", ItemSlot="$ItemSlot );
-        theNetPlayer = NetPlayer( PawnWhoFired );
+        theNetPlayer = NetPlayerMod( PawnWhoFired );
         theFiredWeapon = FiredWeapon(theNetPlayer.GetLoadOut().GetItemAtSlot( ItemSlot ));
         if ( theFiredWeapon == theNetPlayer.GetActiveItem() && theFiredWeapon.IsEquipped() && theFiredWeapon.IsIdle() )
         {
@@ -1148,7 +1151,7 @@ simulated function ClientAIBeginFiringWeapon( Pawn theAIPawn, int CurrentFireMod
 // Executes only on the client.
 simulated function ClientEndFiringWeapon( Pawn PawnWhoFired )
 {
-    local NetPlayer theNetPlayer;
+    local NetPlayerMod theNetPlayer;
 
     if (Level.GetEngine().EnableDevTools)
         mplog( self$"---SGPC::ClientEndFiringWeapon(). PawnWhoFired="$PawnWhoFired );
@@ -1157,7 +1160,7 @@ simulated function ClientEndFiringWeapon( Pawn PawnWhoFired )
 
     if ( PawnWhoFired != None )
     {
-        theNetPlayer = NetPlayer( PawnWhoFired );
+        theNetPlayer = NetPlayerMod( PawnWhoFired );
 
         if (Level.GetEngine().EnableDevTools)
             mplog( "...Stopping autofiring." );
@@ -2253,7 +2256,7 @@ simulated function PlayerFocusInterface GetFocusInterface(EFocusInterface FocusI
     return FocusInterfaces[int(FocusInterface)];
 }
 
-simulated function CommandInterface GetCommandInterface()
+simulated function CommandInterfaceMod GetCommandInterface()
 {
     return CurrentCommandInterface;
 }
@@ -2559,9 +2562,9 @@ function ServerSetVoiceType( eVoiceType inVoiceType )
 //log( self$"::ServerSetVoiceType() .. inVoiceType = "$inVoiceType );
     VoiceType = inVoiceType;
     
-    //update the voice type of the current NetPlayer, if applicable 
-    if( Pawn != None && Pawn.IsA('NetPlayer') )
-        NetPlayer(Pawn).VoiceType = VoiceType;
+    //update the voice type of the current NetPlayerMod, if applicable 
+    if( Pawn != None && Pawn.IsA('NetPlayerMod') )
+        NetPlayerMod(Pawn).VoiceType = VoiceType;
 }
 
 simulated function ClientDestroyPawnsForRespawn( int TeamID )
@@ -4313,7 +4316,7 @@ event PlayerTick(float dTime)
     UpdateRecoil();
     
 /*  TMC 1/23/2004 disabled support for GCIOpen & GiveCommand on the same button (GCIOpen after delay)
-    if (CommandInterface == GraphicCommandInterface)
+    if (CommandInterfaceMod == GraphicCommandInterfaceMod)
     {
         // monitor the 'give command' button (right-mouse by default)
         if (GiveCommandIsDown)
@@ -4640,18 +4643,18 @@ function bool HandsShouldIdle()
 //in MP, this changes the currently selected main menu
 exec function CommandInterfaceNextGroup()
 {
-    local CommandInterface CCI, GCI;
+    local CommandInterfaceMod CCI, GCI;
 
     //need to notify both because DefaultCommand style is managed by the GCI
-    CCI = CommandInterface(GetFocusInterface(Focus_ClassicCommand));
-    GCI = CommandInterface(GetFocusInterface(Focus_GraphicCommand));
+    CCI = CommandInterfaceMod(GetFocusInterface(Focus_ClassicCommand));
+    GCI = CommandInterfaceMod(GetFocusInterface(Focus_GraphicCommand));
 
 //log( self$"::CommandInterfaceNextGroup() ... CCI = "$CCI$", GCI = "$GCI );
 
-#if IG_SWAT_TESTING_MP_CI_IN_SP //tcohen: testing MP CommandInterface behavior in SP
+#if IG_SWAT_TESTING_MP_CI_IN_SP //tcohen: testing MP CommandInterfaceMod behavior in SP
     if (false)
 #else
-    if (Level.NetMode == NM_Standalone)
+    if (Level.NetMode == NM_Standalone || Level.IsPlayingCOOP )
 #endif
     {
     if (CCI != None)
@@ -4670,11 +4673,11 @@ exec function CommandInterfaceNextGroup()
 
 simulated function SetPlayerCommandInterfaceTeam(name Team)
 {
-    local CommandInterface CCI, GCI;
+    local CommandInterfaceMod CCI, GCI;
 
     //need to notify both because DefaultCommand style is managed by the GCI
-    CCI = CommandInterface(GetFocusInterface(Focus_ClassicCommand));
-    GCI = CommandInterface(GetFocusInterface(Focus_GraphicCommand));
+    CCI = CommandInterfaceMod(GetFocusInterface(Focus_ClassicCommand));
+    GCI = CommandInterfaceMod(GetFocusInterface(Focus_GraphicCommand));
 
     if (CCI != None)
         CCI.SetCurrentTeam(Team);
@@ -4710,7 +4713,7 @@ exec function GiveCommand(int CommandIndex)
 //only applies to the GCI
 exec function OpenGraphicCommandInterface()
 {
-    local GraphicCommandInterface GCI;
+    local GraphicCommandInterfaceMod GCI;
 
     if (Repo.GUIConfig.CurrentCommandInterfaceStyle != CommandInterface_Graphic)
         return;
@@ -4718,8 +4721,8 @@ exec function OpenGraphicCommandInterface()
     if (Pawn == None || class'Pawn'.static.CheckDead(Pawn))
         return;
 
-    GCI = GraphicCommandInterface(GetCommandInterface());
-    assert(GCI != None);    //since Repo.GUIConfig.CurrentCommandInterfaceStyle==CommandInterface_Graphic, GetCommandInterface() should be the GraphicCommandInterface
+    GCI = GraphicCommandInterfaceMod(GetCommandInterface());
+    assert(GCI != None);    //since Repo.GUIConfig.CurrentCommandInterfaceStyle==CommandInterface_Graphic, GetCommandInterface() should be the GraphicCommandInterfaceMod
 
     GCI.Open();
 }
@@ -4741,6 +4744,55 @@ exec function CommandOrEquip(NumberRow Row, int Number)
         EquipSlot(Number);
 }
 
+function ServerOrderOfficers(        
+		int CommandIndex,           //index into Commands array of the command that is being given
+        Actor TargetActor,          //the actor that the command refers to
+        Vector TargetLocation,      //the location that the command refers to.
+                                    //  Note: will not be PendingCommandTargetActor.Location, because the focus trace will be blocked before that location
+		name CommandTeam,
+		SwatAICharacter PCTargetCharacter,
+		vector PendingCommandOrigin,
+		Pawn Player	)
+{
+	local Command cmd;
+	local name originalTeam;
+	log("ServerOrderOfficers ---");
+	if(Role == ROLE_Authority)
+	{
+		if(GetCommandInterface() == None)
+		{
+			CurrentCommandInterface = Spawn(class'GraphicCommandInterface_MP');
+			log("CCI: "$CurrentCommandInterface);
+			log("Element: "$GetCommandInterface().Element);
+			log("CommandTeam: "$CommandTeam);
+			log(self);
+		}
+		log(self$" ServerOrderOfficers TargetActor "$TargetActor);
+		//log("Source-OrderingPlayer: "$Source$" : "$OrderingPlayer);
+		cmd = GetCommandInterface().Commands[CommandIndex];
+		//log("cmd: "$cmd);
+		//log("PCTargetCharacter: "$PCTargetCharacter);
+		GetCommandInterface().PendingCommand = cmd;
+		originalTeam = GetCommandInterface().GetCurrentTeam();
+		GetCommandInterface().SetCurrentTeam(CommandTeam);
+		GetCommandInterface().PendingCommandTeam = GetCommandInterface().CurrentCommandTeam;
+		//GetCommandInterface().PendingCommandFociLength = 1;
+		GetCommandInterface().PendingCommandTargetCharacter = PCTargetCharacter;
+		GetCommandInterface().PendingCommandTargetActor = TargetActor;
+		GetCommandInterface().PendingCommandTargetLocation = TargetLocation;
+		GetCommandInterface().LastPlayer = Player;	
+		GetCommandInterface().PendingCommandOrigin = PendingCommandOrigin;
+		log("PendingCommandOrigin "$PendingCommandOrigin$" GetCommandInterface().PendingCommandOrigin "$GetCommandInterface().PendingCommandOrigin);
+		//log("PendingCommandTargetActor "$PendingCommandTargetActor);
+		//log("PCTargetCharacter "$PCTargetCharacter$" TargetActor "$TargetActor$" TargetLocation "$TargetLocation$" OrderingPlayer "$OrderingPlayer);
+		GetCommandInterface().SendCommandToOfficers();
+		GetCommandInterface().SetCurrentTeam(originalTeam);
+	}
+}
+
+
+
+
 function ServerGiveCommand(
         int CommandIndex,           //index into Commands array of the command that is being given
         bool IsTaunt,               //is this command a taunt.  This will be used to determine which players receive the command, and on whom effects should be played.
@@ -4750,19 +4802,51 @@ function ServerGiveCommand(
         string TargetID,            //unique ID of the target
         Vector TargetLocation,      //the location that the command refers to.
                                     //  Note: will not be PendingCommandTargetActor.Location, because the focus trace will be blocked before that location
-        eVoiceType VoiceType)
+        eVoiceType VoiceType,
+		name CommandTeam,
+		SwatAICharacter PCTargetCharacter,
+		Pawn OrderingPlayer	)
 {
     local SwatGamePlayerController PC;
     local Controller Controller;
     local String SourceActorName;
+	local Command cmd;
 
-    if (Level.GetEngine().EnableDevTools)
-    {
-        mplog("SwatGamePlayerController::ServerGiveCommand() Sending to clients CommandIndex="$CommandIndex
+	/*
+	if(Role == ROLE_Authority)
+	{
+		log(self$" ServerGiveCommand-IF");
+		if(GetCommandInterface() == None)
+		{
+			CurrentCommandInterface = Spawn(class'GraphicCommandInterface_MP');
+			log("CCI: "$CurrentCommandInterface);
+			log("Element: "$GetCommandInterface().Element);
+			log("CTeam: "$CommandTeam);
+			log("CommandTeam: "$CommandTeam);
+			log(self);
+		}
+		cmd = GetCommandInterface().Commands[CommandIndex];
+		log("cmd: "$cmd);
+		log("PCTargetCharacter: "$PCTargetCharacter);
+		GetCommandInterface().PendingCommand = cmd;
+		GetCommandInterface().SetCurrentTeam(CommandTeam);
+		GetCommandInterface().PendingCommandTeam = GetCommandInterface().CurrentCommandTeam;
+		GetCommandInterface().PendingCommandFociLength = 1;
+		GetCommandInterface().PendingCommandTargetCharacter = PCTargetCharacter;
+		GetCommandInterface().PendingCommandTargetActor = TargetActor;
+		GetCommandInterface().PendingCommandTargetLocation = TargetLocation;
+		GetCommandInterface().OrderingPlayer = OrderingPlayer;	
+		log("PCTargetCharacter "$PCTargetCharacter$" TargetActor "$TargetActor$" TargetLocation "$TargetLocation$" OrderingPlayer "$OrderingPlayer);
+		GetCommandInterface().SendCommandToOfficers();
+	}
+	*/
+    //if (Level.GetEngine().EnableDevTools)
+    //{
+        log("SwatGamePlayerController::ServerGiveCommand() Sending to clients CommandIndex="$CommandIndex
                 $", TargetActor="$TargetActor
                 $", TargetLocation="$TargetLocation
                 $", Source="$Source);
-    }
+    //}
 
     if( Source == None )
         Source = Pawn(FindByUniqueID( class'Pawn', SourceID ));
@@ -4775,7 +4859,7 @@ function ServerGiveCommand(
         PC = SwatGamePlayerController(Controller);
         if (PC != None && PC != self)   //we want to skip the client who gave the command because it will take care of itself for instant feedback
         {
-            if( PC.Pawn == None || NetPlayer(PC.Pawn) == None )
+            if( PC.Pawn == None || NetPlayerMod(PC.Pawn) == None )
             {
                 if (Level.GetEngine().EnableDevTools)
                     mplog("... skipping ClientReceiveCommand() for PC="$PC$" because the PC doesnt have a pawn.");
@@ -4786,7 +4870,7 @@ function ServerGiveCommand(
             //only taunts are played for opponents
             if  (
                     !IsTaunt
-                &&  NetPlayer(PC.Pawn).GetTeamNumber() != NetPlayer(Pawn).GetTeamNumber()
+                &&  NetPlayerMod(PC.Pawn).GetTeamNumber() != NetPlayerMod(Pawn).GetTeamNumber()
                 )
             {
                 if (Level.GetEngine().EnableDevTools)
@@ -4833,13 +4917,13 @@ simulated function ClientReceiveCommand(
 }
 
 //when a Officer dies, we want to check if any team has no officers.
-//  If so, then we want to switch teams or disable the CommandInterface altogether.
+//  If so, then we want to switch teams or disable the CommandInterfaceMod altogether.
 private function OnOfficerIncapacitated()
 {
-    local CommandInterface CCI, GCI;
+    local CommandInterfaceMod CCI, GCI;
 
-    CCI = CommandInterface(GetFocusInterface(Focus_ClassicCommand));
-    GCI = CommandInterface(GetFocusInterface(Focus_GraphicCommand));
+    CCI = CommandInterfaceMod(GetFocusInterface(Focus_ClassicCommand));
+    GCI = CommandInterfaceMod(GetFocusInterface(Focus_GraphicCommand));
 
     if (CCI != None)
         CCI.CheckTeam();
@@ -4853,7 +4937,7 @@ function OnGiveCommandPressed()
 {
     GiveCommandIsDown = true;
     
-    if (CommandInterface != GraphicCommandInterface) return;    //default command only applies to GraphicCommandInterface
+    if (CommandInterfaceMod != GraphicCommandInterfaceMod) return;    //default command only applies to GraphicCommandInterfaceMod
     
     if (GiveCommandTimer == None)
     {
@@ -4878,7 +4962,7 @@ function OnGiveCommandReleased()
 
         GiveCommandTimer.StopTimer();
 
-        CommandInterface.GiveDefaultCommand();
+        CommandInterfaceMod.GiveDefaultCommand();
     }
     //else, the GiveCommandTimer already elapsed, and called GiveCommandTimeElapsed().
     //  We don't need to do anything more
@@ -5004,12 +5088,12 @@ exec function IssueCompliance()
     local name PlayerTag;
 
     //set the voice tag for the player issuing compliance
-    if( NetPlayer(Pawn) != None )
+    if( NetPlayerMod(Pawn) != None )
     {
-        if( NetPlayer(Pawn).IsTheVIP() )
+        if( NetPlayerMod(Pawn).IsTheVIP() )
             PlayerTag = 'VIP';
         else
-            PlayerTag = Repo.GuiConfig.GetTagForVoiceType( NetPlayer(Pawn).VoiceType );
+            PlayerTag = Repo.GuiConfig.GetTagForVoiceType( NetPlayerMod(Pawn).VoiceType );
     }
         
 	ServerIssueCompliance( string(PlayerTag) );
@@ -5018,13 +5102,13 @@ exec function IssueCompliance()
 function ServerIssueCompliance( string VoiceTag )
 {
 	local bool ACharacterHasAWeaponEquipped;
-    local NetPlayer theNetPlayer;
+    local NetPlayerMod theNetPlayer;
     
     if( CanIssueCompliance() )
     {
         StartIssueComplianceTimer();
 
-        theNetPlayer = NetPlayer(Pawn);
+        theNetPlayer = NetPlayerMod(Pawn);
         if( theNetPlayer != None && !Level.IsPlayingCOOP )
         {
             if( theNetPlayer.IsTheVIP() && theNetPlayer.IsArrested() && !theNetPlayer.IsNonlethaled() )

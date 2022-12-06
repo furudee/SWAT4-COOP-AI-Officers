@@ -1,8 +1,8 @@
 class GUIDefaultCommandIndicator extends GUI.GUILabel;
 
-var(CommandInterface) config string RedTeamStyleName "The Syle to use when displaying a command for the RED team.";
-var(CommandInterface) config string BlueTeamStyleName "The Syle to use when displaying a command for the BLUE team.";
-var(CommandInterface) config string AsAnElementStyleName "The Syle to use when displaying a command for the entire ELEMENT.";
+var(CommandInterfaceMod) config string RedTeamStyleName "The Syle to use when displaying a command for the RED team.";
+var(CommandInterfaceMod) config string BlueTeamStyleName "The Syle to use when displaying a command for the BLUE team.";
+var(CommandInterfaceMod) config string AsAnElementStyleName "The Syle to use when displaying a command for the entire ELEMENT.";
 
 function OnCurrentTeamChanged(SwatAICommon.OfficerTeamInfo NewTeam)
 {

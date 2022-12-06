@@ -26,6 +26,7 @@ event PostBeginPlay()
 	Super.PostBeginPlay();
 
 	InitAbilities();
+	log("officerteaminfo "$self$" PostBeginPlay--- SwatAIRepo: "$SwatAIRepo);
 }
 
 // add all of our abilities to the Squad Resource -- subclasses should call down the chain
@@ -314,13 +315,19 @@ private function bool AreOfficersBusyEngaging()
 private function TriggerBusyEngagingSpeech()
 {
 	local Pawn Officer;
+	local Pawn Player;
+	local Controller Iter;
 
 	// this function doesn't need to be networked because we don't have officers in coop
-	Officer = GetClosestOfficerTo(SwatAIRepo.Level.GetLocalPlayerController().Pawn);
-
-	if (Officer != None)
+	for(Iter = Level.ControllerList; Iter != None; Iter=Iter.NextController)
 	{
-		ISwatOfficer(Officer).GetOfficerSpeechManagerAction().TriggerBusyEngagingSpeech();
+		if (Iter.IsA('PlayerController'))
+		{
+			Player = Iter.Pawn;
+			Officer = GetClosestOfficerTo(Player);
+			if (Officer != None)
+				ISwatOfficer(Officer).GetOfficerSpeechManagerAction().TriggerBusyEngagingSpeech();
+		}
 	}
 }
 
@@ -612,7 +619,6 @@ function bool IsTeamInteractingWith(Actor TestActor)
 function FallIn(Pawn CommandGiver, vector CommandOrigin)
 {
 	local SquadFallInGoal SquadFallInGoal;
-
 	// only post the goal if we are allowed
 	if (CanExecuteCommand())
 	{

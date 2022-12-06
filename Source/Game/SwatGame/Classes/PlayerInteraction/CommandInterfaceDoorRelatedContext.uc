@@ -16,7 +16,7 @@ var config int DefaultCommandPriority;
 
 var config array<ECommand> Command;
 
-//the CommandInterface generally exhausts all contexts
+//the CommandInterfaceMod generally exhausts all contexts
 //  so that it enables all appropriate commands for
 //  a candidate.
 defaultproperties

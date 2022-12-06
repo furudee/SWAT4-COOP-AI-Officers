@@ -37,7 +37,7 @@ function vector GetMirroringToPoint()		{ return MirroringToPoint; }
 function rotator GetMirroringDirection()	{ return Rotation; }
 
 //This is placeholder until evidence is implemented.
-//I am creating the class while implementing the CommandInterface, so that
+//I am creating the class while implementing the CommandInterfaceMod, so that
 //  I can implement the 'MirrorCorner' command.
 
 ///////////////////////////////////////////////////////////////////////////////

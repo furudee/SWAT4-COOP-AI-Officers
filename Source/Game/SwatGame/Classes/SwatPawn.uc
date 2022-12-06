@@ -271,6 +271,9 @@ replication
 
     reliable if ( Role == ROLE_Authority && RemoteRole != ROLE_AutonomousProxy )
         bIsFlashbanged, bIsGassed, bIsPepperSprayed, bIsStung, bIsStunnedByC2, bIsTased;
+		
+	reliable if ( Role == ROLE_Authority )
+		ClientSetDoorLockedBelief, ClientSetDoorWedgedBelief;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1467,17 +1470,31 @@ native function bool DoesBelieveDoorLocked(Door inDoor);
 
 native function bool DoesBelieveDoorWedged(Door inDoor);
 
+simulated function ClientSetDoorLockedBelief(Door inDoor, bool bBelievesDoorLocked)
+{
+	assert(inDoor != None);
+	log(self$" ClientSetDoorLockedBelief");
+	GetDoorKnowledge(inDoor).SetBelievesDoorLocked(bBelievesDoorLocked);
+}
+
+simulated function ClientSetDoorWedgedBelief(Door inDoor, bool bBelievesDoorWedged)
+{
+	assert(inDoor != None);
+	log(self$" ClientSetDoorWedgedBelief");
+	GetDoorKnowledge(inDoor).SetBelievesDoorWedged(bBelievesDoorWedged);
+}
+
 function SetDoorLockedBelief(Door inDoor, bool bBelievesDoorLocked)
 {
 	assert(inDoor != None);
-
+	log(self$" SetDoorLockedBelief");
 	GetDoorKnowledge(inDoor).SetBelievesDoorLocked(bBelievesDoorLocked);
 }
 
 function SetDoorWedgedBelief(Door inDoor, bool bBelievesDoorWedged)
 {
 	assert(inDoor != None);
-
+	log(self$" SetDoorWedgedBelief");
 	GetDoorKnowledge(inDoor).SetBelievesDoorWedged(bBelievesDoorWedged);
 }
 

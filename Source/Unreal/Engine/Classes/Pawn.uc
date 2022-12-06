@@ -1670,7 +1670,7 @@ event PostBeginPlay()
     // MCJ: the test for IsHumanControlled() below doesn't work; in
     // PostBeginPlay() the Pawn hasn't been possessed yet.
     // All these IG_SWAT changes busted network games. I'm exiting early here
-    // if this is a NetPlayer.
+    // if this is a NetPlayerMod.
     if ( Level.NetMode != NM_Standalone && !Level.IsCOOPServer )
         return;
 

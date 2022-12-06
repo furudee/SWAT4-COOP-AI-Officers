@@ -903,7 +903,7 @@ function AddDefaultInventory(Pawn inPlayerPawn)
     local OfficerLoadOut LoadOut;
     local SwatPlayer PlayerPawn;
     local SwatRepoPlayerItem RepoPlayerItem;
-    local NetPlayer theNetPlayer;
+    local NetPlayerMod theNetPlayer;
     local int i;
     local DynamicLoadOutSpec LoadOutSpec;
 
@@ -930,19 +930,19 @@ function AddDefaultInventory(Pawn inPlayerPawn)
     {
         assert( Level.NetMode == NM_DedicatedServer || Level.NetMode == NM_ListenServer );
 
-        theNetPlayer = NetPlayer( inPlayerPawn );
+        theNetPlayer = NetPlayerMod( inPlayerPawn );
         if ( theNetPlayer.IsTheVIP() )
         {
             mplog( "...this player is the VIP." );
             
             // The VIP must always be on the SWAT team.
-            Assert( NetPlayer(PlayerPawn).GetTeamNumber() == 0 );
+            Assert( NetPlayerMod(PlayerPawn).GetTeamNumber() == 0 );
 
             LoadOut = Spawn( class'OfficerLoadOut', PlayerPawn, 'VIPLoadOut' );
             LoadOutSpec = Spawn(class'DynamicLoadOutSpec', None, 'DefaultVIPLoadOut');
             Assert( LoadOutSpec != None );
 
-            // Copy the items from the loadout to the netplayer.
+            // Copy the items from the loadout to the NetPlayerMod.
             for( i = 0; i < Pocket.EnumCount; ++i )
             {
                 theNetPlayer.SetPocketItemClass( Pocket(i), LoadOutSpec.LoadOutSpec[ Pocket(i) ] );
@@ -954,7 +954,7 @@ function AddDefaultInventory(Pawn inPlayerPawn)
         {
             mplog( "...this player is NOT the VIP." );
 
-            if ( NetPlayer(PlayerPawn).GetTeamNumber() == 0 )
+            if ( NetPlayerMod(PlayerPawn).GetTeamNumber() == 0 )
                 LoadOut = Spawn(class'OfficerLoadOut', PlayerPawn, 'EmptyMultiplayerOfficerLoadOut' );
             else
                 LoadOut = Spawn(class'OfficerLoadOut', PlayerPawn, 'EmptyMultiplayerSuspectLoadOut' );
@@ -962,14 +962,14 @@ function AddDefaultInventory(Pawn inPlayerPawn)
             log( "...In AddDefaultInventory(): loadout's owner="$LoadOut.Owner );
             assert(LoadOut != None);
 
-            // First, set all the pocket items in the NetPlayer loadout spec, so
+            // First, set all the pocket items in the NetPlayerMod loadout spec, so
             // that remote clients (ones who don't own the pawn) can locally spawn
             // the loadout items.
             RepoPlayerItem = SwatGamePlayerController(PlayerPawn.Controller).SwatRepoPlayerItem;
 
             //RepoPlayerItem.PrintLoadOutSpecToMPLog();
         
-            // Copy the items from the loadout to the netplayer.
+            // Copy the items from the loadout to the NetPlayerMod.
             for( i = 0; i < Pocket.EnumCount; ++i )
             {
                 theNetPlayer.SetPocketItemClass( Pocket(i), RepoPlayerItem.RepoLoadOutSpec[ Pocket(i) ] );
@@ -1495,9 +1495,10 @@ function PlayerLoggedIn(PlayerController NewPlayer)
 
 	// This call may need to be moved at some point so that the entry point for the spawned officers
 	// is the same as the player.  For now I will just leave it here.  [crombie]
-	if ( Level.NetMode == NM_Standalone )
+	if ( Level.NetMode == NM_Standalone  || ( Level.IsCOOPServer && Level.NetMode != NM_Client && GetNumSpawnedOfficers() == 0 ) )
     {
-        SpawnOfficers();
+		//log("NETMODE------"$Level.NetMode$"-------ISCOOP-------"$Level.IsCOOPServer$"------ASD-----"$( Level.IsCOOPServer && Level.NetMode != NM_Client )$"----ISCLIENT-------"$Level.NetMode == NM_Client);
+		SpawnOfficers();
     }
 	log( "[dkaplan] <<<  PlayerLoggedIn(), NewPlayer = "$NewPlayer);
 }
@@ -1674,12 +1675,12 @@ function RestartPlayer( Controller aPlayer )
             return;
         }	
 
-        NetPlayer(aPlayer.Pawn).SwatPlayerID = SwatGamePlayerController(aPlayer).SwatPlayerID;
+        NetPlayerMod(aPlayer.Pawn).SwatPlayerID = SwatGamePlayerController(aPlayer).SwatPlayerID;
 
         if ( SwatGamePlayerController(aPlayer).ThisPlayerIsTheVIP )
         {
             mplog( "...setting that the player is the VIP" );
-            NetPlayer(aPlayer.Pawn).SetIsVIP();
+            NetPlayerMod(aPlayer.Pawn).SetIsVIP();
         }
 	
         //log("Setting TimeOfLastSpawn to "$Level.TimeSeconds$" for "$StartSpot);
@@ -1845,10 +1846,10 @@ function BroadcastDeathMessage(Controller Killer, Controller Other, class<Damage
     KillerName = Killer.GetHumanReadableName();
     VictimName = Other.GetHumanReadableName();
     WeaponName = damageType.static.GetFriendlyName();   //this actually calls polymorphically into the DamageType subclass!
-    if( NetPlayer(Killer.Pawn) != None )
-        KillerTeam = NetPlayer(Killer.Pawn).GetTeamNumber();
-    if( NetPlayer(Other.Pawn) != None )
-        VictimTeam = NetPlayer(Other.Pawn).GetTeamNumber();
+    if( NetPlayerMod(Killer.Pawn) != None )
+        KillerTeam = NetPlayerMod(Killer.Pawn).GetTeamNumber();
+    if( NetPlayerMod(Other.Pawn) != None )
+        VictimTeam = NetPlayerMod(Other.Pawn).GetTeamNumber();
 
     // Don't send a death message if someone shot a non-VIP after he was
     // arrested.
@@ -1860,8 +1861,8 @@ function BroadcastDeathMessage(Controller Killer, Controller Other, class<Damage
     // this method is called. Hopefully that won't happen, but try to do something
     // semi-intelligent in this situation.
 
-	if( Other.IsA('PlayerController') && NetPlayer(Other.Pawn) != None && 
-	    Killer.IsA('PlayerController') && NetPlayer(Killer.Pawn) != None )
+	if( Other.IsA('PlayerController') && NetPlayerMod(Other.Pawn) != None && 
+	    Killer.IsA('PlayerController') && NetPlayerMod(Killer.Pawn) != None )
 	{
 	    if ( (Killer == Other) || (Killer == None) )
 	    {
@@ -1899,11 +1900,11 @@ function BroadcastArrestedMessage(Controller Killer, Controller Other)
 
     KillerName = Killer.Pawn.GetHumanReadableName();
     VictimName = Other.Pawn.GetHumanReadableName();
-    VictimTeam = NetPlayer(Other.Pawn).GetTeamNumber();
+    VictimTeam = NetPlayerMod(Other.Pawn).GetTeamNumber();
     
 	AssertWithDescription( Killer != Other, KillerName $ " somehow arrested himself.  That really shouldn't ever happen!" );
-	if( Other.IsA('PlayerController') && NetPlayer(Other.Pawn) != None &&
-	    Killer.IsA('PlayerController') && NetPlayer(Killer.Pawn) != None )
+	if( Other.IsA('PlayerController') && NetPlayerMod(Other.Pawn) != None &&
+	    Killer.IsA('PlayerController') && NetPlayerMod(Killer.Pawn) != None )
 	{
 	if( VictimTeam == 1 )
     	Broadcast(Other, KillerName$"\t"$VictimName, 'SwatArrest');
@@ -2184,7 +2185,7 @@ function int ReduceDamage( int Damage, pawn injured, pawn instigatedBy, vector H
 
     Modifier = 1;
     
-    if( Level.IsCOOPServer && ClassIsChildOf(Injured.Class, class'NetPlayer') )
+    if( Level.IsCOOPServer && ClassIsChildOf(Injured.Class, class'NetPlayerMod') )
     {
         // In COOP, reduce damage based on MP damage modifier
         Modifier = COOPDamageModifier;
@@ -2204,7 +2205,7 @@ function int ReduceDamage( int Damage, pawn injured, pawn instigatedBy, vector H
                 AssertWithDescription(false, "Invalid setting ("$Repo.GuiConfig.CurrentDifficulty$") for SwatGUIConfig.CurrentDifficulty");
         }
     }
-    else if (ClassIsChildOf(Injured.Class, class'NetPlayer'))
+    else if (ClassIsChildOf(Injured.Class, class'NetPlayerMod'))
     {
         // In multiplayer, reduce damage based on MP damage modifier
         Modifier = MPDamageModifier;

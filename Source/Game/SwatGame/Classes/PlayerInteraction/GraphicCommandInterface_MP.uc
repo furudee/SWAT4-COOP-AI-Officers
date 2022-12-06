@@ -1,5 +1,7 @@
-class GraphicCommandInterface_MP extends GraphicCommandInterface
+class GraphicCommandInterface_MP extends GraphicCommandInterfaceMod
     config(PlayerInterface_Command_MP);
+	
+
 
 simulated function CheckTeam()
 {

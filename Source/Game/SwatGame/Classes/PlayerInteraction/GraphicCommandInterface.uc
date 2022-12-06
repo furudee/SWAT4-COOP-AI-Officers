@@ -2,12 +2,13 @@ class GraphicCommandInterface extends CommandInterface
     native
     abstract;
 
+
 var protected GUIGraphicCommandInterface View;
 
 var private bool bIsClosed;
 var private bool bWasClosedBeforePageChange;
 
-
+/*
 simulated function Initialize()
 {
     local SwatGamePlayerController Player;
@@ -29,7 +30,7 @@ log( self$"::Initialize() ... Setting the Logic to self!" );
 
     View.CloseInstantly();
 }
-
+*/
 //
 // Update Sequence - See documentation above PlayerFocusInterface::PreUpdate()
 //
@@ -103,7 +104,7 @@ simulated event Destroyed()
     Super.Destroyed();
 }
 
-//called from CommandInterface::SetMainPage(), usually as a result of NextMainPage()
+//called from CommandInterfaceMod::SetMainPage(), usually as a result of NextMainPage()
 simulated protected function PreMainPageChanged()
 {
     bWasClosedBeforePageChange = bIsClosed;
@@ -113,7 +114,7 @@ simulated protected function PreMainPageChanged()
         View.CloseInstantly();
 }
 
-//called from CommandInterface::SetMainPage(), usually as a result of NextMainPage()
+//called from CommandInterfaceMod::SetMainPage(), usually as a result of NextMainPage()
 simulated protected function PostMainPageChanged()
 {
 	//restore bIsClosed from before the page change
@@ -136,3 +137,4 @@ defaultproperties
     bStasis=true
     bIsClosed=true
 }
+

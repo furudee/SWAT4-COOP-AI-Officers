@@ -6,7 +6,7 @@ class Command extends Core.Object
 import enum ECommand from CommandInterface;
 import enum CommandInterfacePage from CommandInterface;
 
-var int Index;  //this is the index of this Command in the CommandInterface's array of Commands
+var int Index;  //this is the index of this Command in the CommandInterfaceMod's array of Commands
 
 var config ECommand Command;
 var config CommandInterfacePage Page;

@@ -128,7 +128,9 @@ private function DetermineAndCacheNearbyOfficerToLookAt()
 	{
 		// we should be a coop game (and be the server)
 		assert(Level.IsCOOPServer);
-
+		SwatAIRepo = SwatAIRepository(Level.AIRepo);
+		OfficerPawns = SwatAIRepo.GetElementSquad().pawns;
+		
 		for (Iter = Level.ControllerList; Iter != None; Iter = Iter.NextController)
 		{
 			if (Iter.IsA('PlayerController'))

@@ -2,8 +2,8 @@ class GUIGraphicCommandInterface extends GUI.GUIMultiComponent
     threaded
     native;
 
-import enum MenuPadStatus from CommandInterface;
-import enum CommandInterfacePage from CommandInterface;
+import enum MenuPadStatus from CommandInterfaceMod;
+import enum CommandInterfacePage from CommandInterfaceMod;
 import enum EInputKey from Engine.Interactions;
 import enum EInputAction from Engine.Interactions;
 
@@ -18,21 +18,21 @@ struct native ScreenLocation
     var private float Y;
 };
 
-var protected GraphicCommandInterface Logic;    //represents the logic for managing the graphic command interface
+var protected GraphicCommandInterfaceMod Logic;    //represents the logic for managing the graphic command interface
 
-var(GraphicCommandInterface) config float OpenCloseTime;   //how long to open/close
+var(GraphicCommandInterfaceMod) config float OpenCloseTime;   //how long to open/close
 
-var(GraphicCommandInterface) config float MouseGestureTime "A break in mouse movement longer than this time is considered a new mouse gesture.";
+var(GraphicCommandInterfaceMod) config float MouseGestureTime "A break in mouse movement longer than this time is considered a new mouse gesture.";
 var private float MouseSensitivity;
 var private float LastMouseMoveTime;
 var private float GestureDistanceX, GestureDistanceY;      //how far the mouse has moved in the current gesture.
-var(GraphicCommandInterface) config float ScrollTime;           //in seconds, the time it takes to scroll the menu from one entry to the next
-var(GraphicCommandInterface) config float MouseDistanceBetweenMenus "How far the mouse needs to move (horizontally, within a gesture) to select the sub/parent menu.";
-var(GraphicCommandInterface) config float MouseDistanceBetweenMenuPads "How far the mouse needs to move (vertically, within a gesture) to select the next/previous menu pad.";
-var(GraphicCommandInterface) config string RedTeamStyleName "The Syle to use when displaying a command menu for the RED team.";
-var(GraphicCommandInterface) config string BlueTeamStyleName "The Syle to use when displaying a command menu for the BLUE team.";
-var(GraphicCommandInterface) config string AsAnElementStyleName "The Syle to use when displaying a command menu for the entire ELEMENT.";
-var(GraphicCommandInterface) config ScreenLocation MainPageCenterOffset;
+var(GraphicCommandInterfaceMod) config float ScrollTime;           //in seconds, the time it takes to scroll the menu from one entry to the next
+var(GraphicCommandInterfaceMod) config float MouseDistanceBetweenMenus "How far the mouse needs to move (horizontally, within a gesture) to select the sub/parent menu.";
+var(GraphicCommandInterfaceMod) config float MouseDistanceBetweenMenuPads "How far the mouse needs to move (vertically, within a gesture) to select the next/previous menu pad.";
+var(GraphicCommandInterfaceMod) config string RedTeamStyleName "The Syle to use when displaying a command menu for the RED team.";
+var(GraphicCommandInterfaceMod) config string BlueTeamStyleName "The Syle to use when displaying a command menu for the BLUE team.";
+var(GraphicCommandInterfaceMod) config string AsAnElementStyleName "The Syle to use when displaying a command menu for the entire ELEMENT.";
+var(GraphicCommandInterfaceMod) config ScreenLocation MainPageCenterOffset;
 var(DEBUG) bool bUseExitPad;
 
 function OnConstruct(GUIController MyController)
@@ -77,7 +77,7 @@ function InitComponent(GUIComponent Owner)
     }
 }
 
-function SetLogic(GraphicCommandInterface inLogic)
+function SetLogic(GraphicCommandInterfaceMod inLogic)
 {
     local int i;
 
@@ -91,7 +91,7 @@ function SetLogic(GraphicCommandInterface inLogic)
             MenuPages[i].IsAMainMenu = (Logic.MenuInfo[i].AnchorCommand == Command_None);
 }
 
-function GraphicCommandInterface GetLogic()
+function GraphicCommandInterfaceMod GetLogic()
 {
     return Logic;
 }
@@ -153,7 +153,7 @@ function OnCurrentTeamChanged(SwatAICommon.OfficerTeamInfo NewTeam)
         MenuPages[int(CurrentCommand.Page)].MenuPads[CurrentCommand.GCIMenuPad].OnSelected();
 }
 
-native function SetCommand(Command Command, CommandInterface.MenuPadStatus Status);
+native function SetCommand(Command Command, CommandInterfaceMod.MenuPadStatus Status);
 
 function SelectCommand(Command NewSelection, optional bool LateralMove)
 {
@@ -163,7 +163,7 @@ function SelectCommand(Command NewSelection, optional bool LateralMove)
     //  a lateral move of the mouse, ie. left or right.
     //Lateral moves don't cause menus to open or close.
 
-    if (NewSelection == None) return;   //this can happen if a command is given before the CommandInterface is updated
+    if (NewSelection == None) return;   //this can happen if a command is given before the CommandInterfaceMod is updated
 
     //out with the old ...
 
@@ -219,6 +219,7 @@ final function Close()
     local int i;
     local GUIGraphicCommandInterfaceMenuPad Pad;
 
+	log("GUIGraphicCommandInterface Close()");
     //unselect the current command
     if (CurrentCommand != None)
     {
@@ -233,12 +234,14 @@ final function Close()
         MenuPages[i].Close();
 
     GotoState('Closing');
+	MenuOwner.bActiveInput = false;
+	bActiveInput = false;
 }
+
 state Closing
 {
 Begin:
     Sleep(OpenCloseTime);
-
     Hide();
     MenuOwner.Deactivate();
     DeActivate();
@@ -518,7 +521,7 @@ protected function GiveCommand()
     TriggerEffectEvent('GaveCommand');
 }
 
-function Command GetCommandRef(CommandInterface.ECommand Command)
+function Command GetCommandRef(CommandInterfaceMod.ECommand Command)
 {
     return Logic.Commands[int(Command)];
 }

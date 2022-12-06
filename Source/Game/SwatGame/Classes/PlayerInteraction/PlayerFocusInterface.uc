@@ -5,7 +5,7 @@ class PlayerFocusInterface extends Engine.Actor
 
 //This is the base of classes which encapsulate player interface elements
 //  controlled with player focus, ie. with the reticle.
-//Subclasses include UseInterface, FireInterface, and CommandInterface.
+//Subclasses include UseInterface, FireInterface, and CommandInterfaceMod.
 
 import enum ESkeletalRegion from Engine.Actor;
 import enum EMaterialVisualType from Engine.Material;

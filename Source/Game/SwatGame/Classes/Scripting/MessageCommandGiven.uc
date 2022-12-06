@@ -16,11 +16,11 @@ overloaded function construct(Name inCommand, Name inTeam, name inDoor)
 // editorDisplay
 static function string editorDisplay(Name triggeredBy, Message filter)
 {
-	return "The Player gives a command with the CommandInterface";
+	return "The Player gives a command with the CommandInterfaceMod";
 }
 
 
 defaultproperties
 {
-	specificTo	= class'CommandInterface'
+	specificTo	= class'CommandInterfaceMod'
 }

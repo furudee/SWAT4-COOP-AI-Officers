@@ -831,9 +831,9 @@ Begin:
 		SetTimer(RagdollSimulationTimeout, false);
         if ( Level.NetMode != NM_Standalone )
         {
-			// this code should be in NetPlayer (i didn't write it though). [crombie]
-            if ( IsA('NetPlayer') && !NetPlayer(self).IsTheVIP() )
-                NetPlayer(self).GetNetTeam().AddNetPlayerToDestroy( NetPlayer(self) );
+			// this code should be in NetPlayerMod (i didn't write it though). [crombie]
+            if ( IsA('NetPlayerMod') && !NetPlayerMod(self).IsTheVIP() )
+                NetPlayerMod(self).GetNetTeam().AddNetPlayerToDestroy( NetPlayerMod(self) );
         }
 	}	
 

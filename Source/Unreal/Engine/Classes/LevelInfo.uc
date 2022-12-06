@@ -70,7 +70,7 @@ var()	   bool bKNoInit;				// Start _NO_ Karma for this level. Only really for t
 var(Havok)    bool bHavokDisabled;          //  Disable Havok for this level.
 var(Havok)    float HavokStepTimeQuantum;   // Usually 0.016f (1/60) of a sec)
 var(Havok)    string HavokMoppCodeFilename; // The optional filename to load the static (prebuilt) Mopp code from.
-var(Havok)    int HavokBroadPhaseDimension; // Something like 50,000 or so. Must encompase the whole world from the orign
+var(Havok)    int HavokBroadPhaseDimension; // Something like 50,000 or so. Must encompdase the whole world from the orign
 
 #if IG_SWAT // ckline: allow designers to try different solvers
 var(Havok) enum EHavokSolverType 
@@ -349,6 +349,7 @@ native simulated function bool IsEntry();
 native simulated function bool IsTheEntryLevel();
 #endif
 
+
 simulated function PostBeginPlay()
 {
 	Super.PostBeginPlay();
@@ -379,17 +380,17 @@ simulated function InitializeEffectsSystem()
 #endif
 
 
-private function CreateAIRepository()
+simulated private function CreateAIRepository()
 {
     local class<AIRepository> AIRepositoryClass;
 
 	if (Level.GetEngine().EnableDevTools)
 		log( "dkaplan: CreateAIRepository() ... Level.IsCOOPServer = "$Level.IsCOOPServer$", NetMode = "$GetEnum(ENetMode, NetMode) );
-
+	log( "dkaplan: CreateAIRepository() ... Level.IsCOOPServer = "$Level.IsCOOPServer$", NetMode = "$GetEnum(ENetMode, NetMode) );
     // if we are not a networked game (NM_Standalone), then spawn the AIRepository
-    if (NetMode == NM_Standalone 
+    if (NetMode == NM_Standalone || Level.IsPlayingCOOP
 #if IG_SWAT //dkaplan, also create an AIRepo for COOP
-        || Level.IsCOOPServer
+        || Level.IsCOOPServer || Level.NetMode == NM_Client
 #endif
        )
     {
@@ -603,7 +604,7 @@ replication
 #endif
 
 	reliable if( bNetDirty && Role==ROLE_Authority )
-		Pauser, TimeDilation, DefaultGravity;
+		Pauser, TimeDilation, DefaultGravity, AIRepo;
 
 	reliable if( bNetInitial && Role==ROLE_Authority )
 		RagdollTimeScale, KarmaTimeScale, KarmaGravScale;
@@ -837,7 +838,8 @@ defaultproperties
      Title="Untitled"
     MoveRepSize=+64.0
     MusicVolumeOverride=-1
-    AIRepositoryClassName="Engine.AIRepository" 
+    AIRepositoryClassName="Engine.AIRepository"
+	AIRepo = Spawn(class<AIRepository>(DynamicLoadObject(AIRepositoryClassName,class'Class')), self);
 
 //#if IG_SHARED // ckline: set DecalStayScale default to 1, old default of 0 means no ProjectedDecals show up!
     DecalStayScale=1.0

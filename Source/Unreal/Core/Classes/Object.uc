@@ -77,7 +77,7 @@ class Object
 #define IG_SWAT_AUDIT_FOCUS 1
 #define IG_SWAT_INTERRUPT_STATE_SUPPORT 1
 #define IG_SWAT_DEBUG_VISION 0
-#define IG_SWAT_TESTING_MP_CI_IN_SP 0 //tcohen: testing MP CommandInterface behavior in SP
+#define IG_SWAT_TESTING_MP_CI_IN_SP 0 //tcohen: testing MP CommandInterfaceMod behavior in SP
 #define UGLY_RENDER_CORRUPTION_WORKAROUND 1
 #define IG_ADCLIENT_INTEGRATION 1 // dbeswick: Massive AdClient integration
 

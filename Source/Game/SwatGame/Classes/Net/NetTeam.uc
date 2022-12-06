@@ -16,7 +16,7 @@ var private int   respawnSecondsRemaining;
 
 // Contains references to pawns on this team who have died, but whose pawns
 // need to be destroyed when the respawn timer goes off.
-var private array<NetPlayer> PawnsToDestroy;
+var private array<NetPlayerMod> PawnsToDestroy;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@ function SetRespawnSecondsRemaining( int Seconds )
     respawnSecondsRemaining = Seconds;
 }
 
-simulated function AddNetPlayerToDestroy( NetPlayer PawnToDestroy )
+simulated function AddNetPlayerToDestroy( NetPlayerMod PawnToDestroy )
 {
  	if (Level.GetEngine().EnableDevTools)
 	    mplog( self$"---NetTeam::AddNetPlayerToDestroy(). PawnToDestroy="$PawnToDestroy );

@@ -99,15 +99,19 @@ function EnableAwareness()
 
 function AddOfficerToHiveAwareness(Pawn Officer)
 {
+	local int numOfficers;
     HiveAwarenessPawns[HiveAwarenessPawns.length] = Officer;
 
+	numOfficers = GetNumOfficers();
+	log(self$" numOfficers: "$numOfficers);
     // If the awareness object has not yet been created, and all officers in
     // the element squad have been constructed, create the awareness object
     // for those pawns.
-    if (HiveAwareness == None && (HiveAwarenessPawns.length == SwatAIRepo.Level.Game.GetNumSpawnedOfficers()))
+    if (HiveAwareness == None && ( (numOfficers >= 3 || HiveAwarenessPawns.length == SwatAIRepo.Level.Game.GetNumSpawnedOfficers()) ))
     {
         HiveAwareness = class'SwatAIAwareness.AwarenessFactory'.static.CreateAwarenessForMultiplePawns(HiveAwarenessPawns);
     }
+	
 }
 
 function RemoveOfficerFromHiveAwareness(Pawn Officer)

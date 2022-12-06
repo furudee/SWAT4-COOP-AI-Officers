@@ -263,6 +263,8 @@ replication
     reliable if (Role == Role_Authority)
         bIsLocked, bIsBroken, ReasonForMove, LockedKnowledge,
         DeployedWedge, DeployedC2ChargeLeft, DeployedC2ChargeRight;
+	reliable if (Role < Role_Authority)
+		InformServerLocked;
 }
 ///////////////////////////
 
@@ -491,9 +493,14 @@ simulated function bool CanInteract()
 simulated function Interact(Pawn Other, optional bool Force)
 {
     local SwatPawn PlayerPawn;
-    local NetPlayer NetPlayerPawn;
     local SwatGamePlayerController PC;
+	local Controller iter;
+	local NetPlayerMod CurrentNetPlayer;
 
+
+
+	log("SWATDOOR---INTERACT()");
+	log("Other: "$Other);
     Assert( Level.NetMode != NM_Client );
 
     assertWithDescription(CanInteract(),
@@ -516,7 +523,7 @@ simulated function Interact(Pawn Other, optional bool Force)
 	// save off the last person who interacted with this door
 	LastInteractor = Other;
 
-//	log(Name $ " Debug Interaction - IsClosed(): " $ IsClosed() $ " bIsLocked: " $ bIsLocked $ " Force: " $ Force);
+	log(Name $ " Debug Interaction - IsClosed(): " $ IsClosed() $ " bIsLocked: " $ bIsLocked $ " Force: " $ Force);
 
 	// if bForce is true, we are forcing a locked door to open
 	// only block locked doors if they are closed (let them become closed again -- and stay locked)
@@ -532,12 +539,23 @@ simulated function Interact(Pawn Other, optional bool Force)
             PlayerPawn.SetDoorLockedBelief(self, true);
         }
         if ( Level.NetMode == NM_ListenServer || Level.NetMode == NM_DedicatedServer )
-        {
-            NetPlayerPawn = NetPlayer( Other );
+        {	
+			for ( iter = Level.ControllerList; iter != None; iter = iter.NextController )
+			{
+				PC = SwatGamePlayerController( iter );
+				if ( PC != None )
+				{
+					CurrentNetPlayer = NetPlayerMod(PC.SwatPlayer);
+					CurrentNetPlayer.OnDoorLocked( self );
+					LockedKnowledge[ CurrentNetPlayer.GetTeamNumber() ] = 1;
+					InformServerLocked();
+				}
+			}
+			/*
+            NetPlayerPawn = NetPlayerMod( Other );
             LockedKnowledge[ NetPlayerPawn.GetTeamNumber() ] = 1;
-            
-			if (Level.GetEngine().EnableDevTools)
-				mplog("Saving locked door knowledge for pawn: "$NetPlayerPawn$", team number: "$NetPlayerPawn.GetTeamNumber());
+			log("Saving locked door knowledge for pawn: "$NetPlayerPawn$", team number: "$NetPlayerPawn.GetTeamNumber());
+			*/
         }
     }
     else
@@ -572,6 +590,25 @@ simulated function Interact(Pawn Other, optional bool Force)
     }
 }
 
+function InformServerLocked()
+{
+	log(self$" InformServerLocked");
+	SwatAIRepository(Level.AIRepo).UpdateDoorKnowledgeForOfficers(self);
+}
+
+simulated function OnLocked()
+{
+    local SwatPawn PlayerPawn;
+	log( self$"---SwatDoor::OnLocked()." );
+	LockedKnowledge[ 0 ] = 1;
+	if(Level.NetMode == NM_Client && !KnowsDoorIsLocked(0) )
+	{
+		PlayerPawn = SwatPawn(Level.GetLocalPlayerController().Pawn);
+		PlayerPawn.SetDoorLockedBelief(self, true);
+		SwatAIRepository(Level.AIRepo).UpdateDoorKnowledgeForOfficers(self);
+	}
+}
+
 simulated function OnWedged()
 {
     TriggerEffectEvent('Wedged');
@@ -591,7 +628,7 @@ simulated function OnUnlocked()
     local Controller i;
     local Controller theLocalPlayerController;
     local SwatGamePlayerController current;
-    local NetPlayer CurrentNetPlayer;
+    local NetPlayerMod CurrentNetPlayer;
 
 	if (Level.GetEngine().EnableDevTools)
 		mplog( self$"---SwatDoor::OnUnlocked()." );
@@ -621,7 +658,7 @@ simulated function OnUnlocked()
             current = SwatGamePlayerController( i );
             if ( current != None )
             {
-                CurrentNetPlayer = NetPlayer(current.SwatPlayer);
+                CurrentNetPlayer = NetPlayerMod(current.SwatPlayer);
                 if ( current != theLocalPlayerController )
                 {
 					if (Level.GetEngine().EnableDevTools)
@@ -1089,11 +1126,13 @@ simulated function UpdateOfficerDoorKnowledge()
 {
 	local SwatAIRepository AIRepo;
     local SwatPawn PlayerPawn;
+	local Controller iter;
+	log(self$" UpdateOfficerDoorKnowledge");
 
 	// this is only necessary for standalone games
-	if (Level.NetMode == NM_Standalone)
+	if (Level.NetMode == NM_Standalone || true)
 	{
-		PlayerPawn = SwatPawn(Level.GetLocalPlayerController().Pawn);
+		//PlayerPawn = SwatPawn(Level.GetLocalPlayerController().Pawn);
 
 		// update our knowledge (and any AI knowledge, if any AIs exist)
 		// NOTE: this is different from before where the AI behavior would 
@@ -1103,21 +1142,30 @@ simulated function UpdateOfficerDoorKnowledge()
 		if (AIRepo != None)
 			AIRepo.UpdateDoorKnowledgeForOfficers(self);
 		else                //no AIRepository... tell myself
-			PlayerPawn.SetDoorLockedBelief(self, false);
+		{
+			for(Iter = Level.ControllerList; Iter != None; Iter=Iter.NextController)
+			{
+				if (Iter.IsA('PlayerController'))
+				{
+					PlayerPawn = SwatPawn(Iter.Pawn);
+					PlayerPawn.SetDoorLockedBelief(self, false);
+				}
+			}
+		}
 	}
 }
 
 simulated event bool PawnBelievesDoorLocked(SwatPawn Pawn)
 {
     local PawnDoorKnowledge Info;
-    local NetPlayer         NetPawn;
+    local NetPlayerMod         NetPawn;
     
     Info = Pawn.GetDoorKnowledge(self);
     assert(Info != None);   //shouldn't try to get door knowledge on a SwatPawn with no door knowledge
 
     if ( Level.NetMode != NM_Standalone )
     {
-        NetPawn = NetPlayer(Pawn);
+        NetPawn = NetPlayerMod(Pawn);
         return KnowsDoorIsLocked(NetPawn.GetTeamNumber());
     } else
         return Info.DoesBelieveDoorLocked();

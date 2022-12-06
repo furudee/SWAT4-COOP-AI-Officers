@@ -1,4 +1,4 @@
-class ClassicCommandInterface extends CommandInterface
+class ClassicCommandInterface extends CommandInterfaceMod
     abstract;
 
 import enum EquipmentSlot from Engine.HandheldEquipment;
@@ -78,7 +78,7 @@ simulated function SetCurrentPage(CommandInterfacePage NewPage, optional bool Fo
     }
 }
 
-//called from final function CommandInterface::SetMainPage(), usually as a result of CommandInterface::NextMainPage()
+//called from final function CommandInterfaceMod::SetMainPage(), usually as a result of CommandInterfaceMod::NextMainPage()
 simulated protected function PostMainPageChanged()
 {
     SetCurrentPage(CurrentMainPage);
@@ -89,7 +89,7 @@ simulated function GiveCommandIndex(int CommandIndex)
     local SwatGamePlayerController Player;
 
     assertWithDescription(CommandIndex <= MAX_COMMANDS,
-        "[tcohen] CommandInterface::GiveCommand() was called with CommandIndex="$CommandIndex
+        "[tcohen] CommandInterfaceMod::GiveCommand() was called with CommandIndex="$CommandIndex
         $", but MAX_COMMANDS="$MAX_COMMANDS
         $".");
 
@@ -122,7 +122,7 @@ simulated function UpdateView()
     local string DrawnIndex;
     local string Text;
 
-#if IG_SWAT_TESTING_MP_CI_IN_SP //tcohen: testing MP CommandInterface behavior in SP
+#if IG_SWAT_TESTING_MP_CI_IN_SP //tcohen: testing MP CommandInterfaceMod behavior in SP
     if (false)
 #else
     if (Level.NetMode == NM_Standalone)
