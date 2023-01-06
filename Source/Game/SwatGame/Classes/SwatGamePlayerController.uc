@@ -139,7 +139,7 @@ var config private array<PlayerFocusInterfaceInfo> FocusInterfaceInfos; // List 
                                                                         // Should be populated in defaultproperties.
 var private array<PlayerFocusInterface> FocusInterfaces;                // List of currently active player focus interfaces.
 
-var private CommandInterfaceMod CurrentCommandInterface;
+var CommandInterfaceMod CurrentCommandInterface;
 
 enum NumberRow
 {
@@ -4754,40 +4754,77 @@ function ServerOrderOfficers(
 		vector PendingCommandOrigin,
 		Pawn Player	)
 {
-	local Command cmd;
+	local SwatGamePlayerController localSGPC;
+	local CommandInterfaceMod cInterface;
 	local name originalTeam;
+	local SwatAICharacter originalCharacter;
+	local Actor originalActor;
+	local Vector originalLocation;
+	local Pawn originalPlayer;
+	local vector originalOrigin;
+	
 	log("ServerOrderOfficers ---");
+	log(self$" GetCommandInterface(): "$GetCommandInterface());
+	
+	if(localSGPC == None && Level.NetMode == NM_ListenServer)
+		localSGPC = SwatGamePlayerController(Level.GetLocalPlayerController());
+	
 	if(Role == ROLE_Authority)
 	{
-		if(GetCommandInterface() == None)
+
+		if(Level.NetMode == NM_DedicatedServer)
 		{
-			CurrentCommandInterface = Spawn(class'GraphicCommandInterface_MP');
-			log("CCI: "$CurrentCommandInterface);
-			log("Element: "$GetCommandInterface().Element);
-			log("CommandTeam: "$CommandTeam);
-			log(self);
+			if(GetCommandInterface() == None)
+			{
+				CurrentCommandInterface = Spawn(class'GraphicCommandInterface_MP');
+				cInterface = GetCommandInterface();
+				log("CCI: "$CurrentCommandInterface);
+				log("Element: "$GetCommandInterface().Element);
+				log("CommandTeam: "$CommandTeam);
+				log(self);
+			}
 		}
-		log(self$" ServerOrderOfficers TargetActor "$TargetActor);
-		//log("Source-OrderingPlayer: "$Source$" : "$OrderingPlayer);
-		cmd = GetCommandInterface().Commands[CommandIndex];
-		//log("cmd: "$cmd);
-		//log("PCTargetCharacter: "$PCTargetCharacter);
-		GetCommandInterface().PendingCommand = cmd;
-		originalTeam = GetCommandInterface().GetCurrentTeam();
-		GetCommandInterface().SetCurrentTeam(CommandTeam);
-		GetCommandInterface().PendingCommandTeam = GetCommandInterface().CurrentCommandTeam;
-		//GetCommandInterface().PendingCommandFociLength = 1;
-		GetCommandInterface().PendingCommandTargetCharacter = PCTargetCharacter;
-		GetCommandInterface().PendingCommandTargetActor = TargetActor;
-		GetCommandInterface().PendingCommandTargetLocation = TargetLocation;
-		GetCommandInterface().LastPlayer = Player;	
-		GetCommandInterface().PendingCommandOrigin = PendingCommandOrigin;
-		log("PendingCommandOrigin "$PendingCommandOrigin$" GetCommandInterface().PendingCommandOrigin "$GetCommandInterface().PendingCommandOrigin);
-		//log("PendingCommandTargetActor "$PendingCommandTargetActor);
-		//log("PCTargetCharacter "$PCTargetCharacter$" TargetActor "$TargetActor$" TargetLocation "$TargetLocation$" OrderingPlayer "$OrderingPlayer);
-		GetCommandInterface().SendCommandToOfficers();
-		GetCommandInterface().SetCurrentTeam(originalTeam);
+		else
+		{
+			cInterface = localSGPC.GetCommandInterface();
+			originalTeam = cInterface.GetTeamByInfo(cInterface.PendingCommandTeam);
+			originalCharacter = cInterface.PendingCommandTargetCharacter;
+			originalActor = cInterface.PendingCommandTargetActor;
+			originalLocation = cInterface.PendingCommandTargetLocation;
+			originalPlayer = Level.GetLocalPlayerController().Pawn;
+			originalOrigin = cInterface.PendingCommandOrigin;
+		}
+		
+		log(self);
+		//log(self$" ServerOrderOfficers TargetActor "$TargetActor);
+		cInterface.PendingCommand = cInterface.Commands[CommandIndex];
+		//originalTeam = GetCommandInterface().GetCurrentTeam();
+		//log(self$" originalTeam: "$originalTeam$" currentTeam: "$GetCommandInterface().GetCurrentTeam());
+		//GetCommandInterface().SetCurrentTeam(CommandTeam);
+		cInterface.PendingCommandTeam = cInterface.GetTeamByName(CommandTeam);
+		log(self$" cInterface.PendingCommandTeam "$cInterface.PendingCommandTeam);
+		cInterface.PendingCommandTargetCharacter = PCTargetCharacter;
+		cInterface.PendingCommandTargetActor = TargetActor;
+		cInterface.PendingCommandTargetLocation = TargetLocation;
+		cInterface.LastPlayer = Player;	
+		cInterface.PendingCommandOrigin = PendingCommandOrigin;
+		//log(self$" PendingCommandOrigin "$PendingCommandOrigin$" GetCommandInterface().PendingCommandOrigin "$GetCommandInterface().PendingCommandOrigin);
+		cInterface.SendCommandToOfficers();
+		//GetCommandInterface().SetCurrentTeam(originalTeam);
+		//log(self$" currentTeam: "$GetCommandInterface().GetCurrentTeam());
+
+		if(Level.NetMode == NM_ListenServer && localSGPC != None)
+		{
+			cInterface.PendingCommandTeam = cInterface.GetTeamByName(originalTeam);
+			cInterface.PendingCommandTargetCharacter = originalCharacter;
+			cInterface.PendingCommandTargetActor = originalActor;
+			cInterface.PendingCommandTargetLocation = originalLocation;
+			cInterface.LastPlayer = originalPlayer;	
+			cInterface.PendingCommandOrigin = originalOrigin;
+		}
+		
 	}
+	
 }
 
 
@@ -4890,7 +4927,8 @@ function ServerGiveCommand(
                     TargetActor, 
                     TargetID,
                     TargetLocation,
-                    VoiceType );
+                    VoiceType,
+					CommandTeam					);
         }
     }
 }
@@ -4903,9 +4941,10 @@ simulated function ClientReceiveCommand(
         Actor TargetActor, 
         string TargetID,
         Vector TargetLocation,
-        eVoiceType VoiceType )
+        eVoiceType VoiceType,
+		name CommandTeam)
 {
-    GetCommandInterface().ReceiveCommandMP(
+    GetCommandInterface().ReceiveCommandMP_mod(
             CommandIndex, 
             Source,
             SourceID,
@@ -4913,7 +4952,8 @@ simulated function ClientReceiveCommand(
             TargetActor, 
             TargetID,
             TargetLocation,
-            VoiceType);
+            VoiceType,
+			CommandTeam);
 }
 
 //when a Officer dies, we want to check if any team has no officers.

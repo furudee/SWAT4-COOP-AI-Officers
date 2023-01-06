@@ -461,15 +461,15 @@ simulated function PostUpdate();
 //set the CurrentCommandTeam by OfficerTeamInfo, and permit subclasses to do something when the current team changes
 simulated overloaded final function SetCurrentTeam(SwatAICommon.OfficerTeamInfo NewTeam)
 {
-    if (NewTeam != CurrentCommandTeam)
-    {
+    //if (NewTeam != CurrentCommandTeam)
+    //{
         CurrentCommandTeam = NewTeam;
 
         if (DefaultCommandControl != None)
             DefaultCommandControl.OnCurrentTeamChanged(NewTeam);
 
         OnCurrentTeamChanged(NewTeam);
-    }
+    //}
 }
 simulated protected function OnCurrentTeamChanged(SwatAICommon.OfficerTeamInfo NewTeam);
 

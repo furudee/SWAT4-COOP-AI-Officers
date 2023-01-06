@@ -623,18 +623,20 @@ function FallIn(Pawn CommandGiver, vector CommandOrigin)
 	if (CanExecuteCommand())
 	{
 		// if we're not a sub element, or if the other team is not falling in
-		if (!IsSubElement() || !IsOtherSubElementFallingIn())
+		if (!IsSubElement()  || !IsOtherSubElementFallingIn() || (GetOtherTeam().IsFallingIn() && GetOtherTeam().CurrentSquadCommandGoal.CommandGiver != CommandGiver))
 		{
 			SquadFallInGoal = new class'SquadFallInGoal'(AI_Resource(SquadAI), CommandGiver, CommandOrigin);
 			assert(SquadFallInGoal != None);
 
 			PostCommandGoal(SquadFallInGoal);
 		}
+		
 		else
 		{
 			// we want the whole team to fall in
 			SwatAIRepo.GetElementSquad().FallIn(CommandGiver, CommandOrigin);
 		}
+		
 	}
 }
 

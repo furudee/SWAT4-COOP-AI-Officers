@@ -7,6 +7,132 @@ var vector PendingCommandOrigin;
 var name LastFocusSource;
 var Pawn LastPlayer;
 
+simulated function SwatAICommon.OfficerTeamInfo GetTeamByName(name teamName)
+{
+    switch (teamName)
+    {
+        case 'RedTeam':
+            return RedTeam;
+        case 'BlueTeam':
+            return BlueTeam;
+        case 'Element':
+            return Element;
+        default:
+            assert(false);
+    }
+}
+
+simulated function name GetTeamByInfo(SwatAICommon.OfficerTeamInfo teamName)
+{
+    switch (teamName)
+    {
+        case RedTeam:
+            return 'RedTeam';
+        case BlueTeam:
+            return 'BlueTeam';
+        case Element:
+            return 'Element';
+        default:
+            assert(false);
+    }
+}
+
+simulated function ReceiveCommandMP_mod(
+        int CommandIndex,           //index into Commands array of the command that is being given
+        Actor Source,               //the player giving the command
+        string SourceID,            //unique ID of the source
+        String SourceActorName,     //the human readable name of the player giving the command
+        Actor TargetActor,          //the actor that the command refers to
+        string TargetID,            //unique ID of the target
+        Vector TargetLocation,      //the location that the command refers to.
+        eVoiceType VoiceType,		//the voice to use when playing this command
+		name CommandTeam )       
+{
+    local Actor SourceOfSound;
+    local Name VoiceTag;
+	local String Color;
+    
+    if( Source == None && SourceID != "" )
+        Source = FindByUniqueID( None, SourceID );
+        
+    if( TargetActor == None && TargetID != "" )
+        TargetActor = FindByUniqueID( None, TargetID );
+    
+    //Note!  This is a command received from (potentially) another client.
+    //  The PendingCommand* variables can NOT be used here.
+
+    log("TMC CommandInterfaceMod::ReceiveCommandMP() received the command "$Commands[CommandIndex].name
+            $", Source="$Source
+            $", TargetActor="$TargetActor
+            $", TargetLocation="$TargetLocation
+            $", VoiceType="$GetEnum(eVoiceType,VoiceType)
+            $", Command_MP(Commands[CommandIndex]).ArrowLifetime = "$Command_MP(Commands[CommandIndex]).ArrowLifetime );
+
+    //taunts are played on the speaker, others are played on the listener
+    if (Command_MP(Commands[CommandIndex]).IsTaunt)
+        SourceOfSound = Source;
+    else
+        SourceOfSound = PlayerPawn;
+
+    //choose the voice type that should be used for the source of this command
+    VoiceTag = SwatRepo(Level.GetRepo()).GuiConfig.GetTagForVoiceType( VoiceType );
+
+    //set temporary effect contexts for target SwatPawns regarding gender and hostility
+    if (TargetActor != None && TargetActor.IsA('SwatPawn'))
+    {
+        if (TargetActor.IsA('SwatAICharacter') && SwatAICharacter(TargetActor).IsFemale())
+            AddContextForNextEffectEvent('Female');
+        else
+            AddContextForNextEffectEvent('Male');
+
+        //for 'OrderedRestrain', players on other team are considered suspects, ie. use more agressive language, "Tie up that idiot"
+        if (TargetActor.IsA('SwatHostage'))
+            AddContextForNextEffectEvent('Civilian');
+        else
+            AddContextForNextEffectEvent('Suspect');
+    }
+    //note that if the TargetActor is None or not a SwatPawn, then no temporary contexts will be added
+    
+    //trigger the sound effect for the command given
+    if( SourceOfSound != None )
+        SourceOfSound.TriggerEffectEvent(Commands[CommandIndex].EffectEvent,,,,,,,,VoiceTag);
+
+
+	//display the command given as a chat message
+	Switch(CommandTeam)
+	{
+		case 'RedTeam':
+			PlayerController.ClientMessage(
+				"[c=cc0000][b]"$SourceActorName $ GaveCommandString $ Commands[CommandIndex].Text,
+				'CommandGiven');
+			break;
+        case 'BlueTeam':
+			PlayerController.ClientMessage(
+				"[c=3d85c6][b]"$SourceActorName $ GaveCommandString $ Commands[CommandIndex].Text,
+				'CommandGiven');
+			break;
+        default:
+			PlayerController.ClientMessage(
+				"[c=FFC800][b]"$SourceActorName $ GaveCommandString $ Commands[CommandIndex].Text,
+				'CommandGiven');
+	}
+	/*
+		PlayerController.ClientMessage(
+			"[c=" $ Color $ "][b]"$SourceActorName $ GaveCommandString $ Commands[CommandIndex].Text,
+			'CommandGiven');
+	*/
+	
+    //Display the Command Arrow
+    if( Source != None && Command_MP(Commands[CommandIndex]).ArrowLifetime > 0.0 )
+    {
+        Assert( Source.IsA('SwatPlayer') );
+        SwatPlayer(Source).ShowCommandArrow( Command_MP(Commands[CommandIndex]).ArrowLifetime, Source, TargetActor, Source.Location, TargetLocation, ( Command_MP(Commands[CommandIndex]).IsTaunt || Command_MP(Commands[CommandIndex]).TargetIsSelf ) );
+    }
+    
+    //PlayerController.myHUD.AddDebugBox(TargetLocation, 5, class'Engine.Canvas'.Static.MakeColor(255,200,200), 10);
+    //PlayerController.myHUD.AddDebugLine(Source.Location, TargetLocation, class'Engine.Canvas'.Static.MakeColor(255,50,50), 10);
+}
+
 simulated function GiveCommandMP()
 {
     local eVoiceType VoiceType;
@@ -93,10 +219,10 @@ state SpeakingCommand extends Speaking
     // the command speech has either completed, or it has been interrupted.
     function OnEffectStopped(Actor inStoppedEffect, bool Completed)
     {
-		local name CommandTeam;
+		local name CommandTeamName;
 		local Pawn Player;
 		
-		CommandTeam = GetCurrentTeam();
+		CommandTeamName = GetTeamByInfo(PendingCommandTeam);
 		Player = Level.GetLocalPlayerController().Pawn;
 		/*
 		PendingCommandTargetActor = GetPendingCommandTargetActor();
@@ -121,7 +247,7 @@ state SpeakingCommand extends Speaking
 				PendingCommand.Index,
 				PendingCommandTargetActor,
 				PendingCommandTargetLocation, 
-				CommandTeam,
+				CommandTeamName,
 				PendingCommandTargetCharacter,
 				PendingCommandOrigin,
 				Player	);
@@ -248,10 +374,11 @@ simulated function SendCommandToOfficers()
 	}
 	*/
 	
-	log("PendingCommand "$PendingCommand$" PendingCommandTeam "$PendingCommandTeam);
+	log(self$" PendingCommand "$PendingCommand);
+	log(self$" PendingCommandTeam "$PendingCommandTeam);
 	//log("Level.GetLocalPlayerController().Pawn "$Level.GetLocalPlayerController().Pawn);
-	log("PendingCommandOrigin "$PendingCommandOrigin);
-	log("PendingCommandTargetActor "$PendingCommandTargetActor);
+	log(self$" PendingCommandOrigin "$PendingCommandOrigin);
+	log(self$" PendingCommandTargetActor "$PendingCommandTargetActor);
 	//log("GetLastFocusLocation() "$GetLastFocusLocation());
 	
 	//
