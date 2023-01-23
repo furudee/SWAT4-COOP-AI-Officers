@@ -6077,7 +6077,6 @@ public:
     BITFIELD bGameStarted:1;
     FStringNoInit AIRepositoryClassName;
     class AAIRepository* AIRepo;
-    class AAIRepository* ReplicatedAIRepo;
     BITFIELD EnemiesAlwaysTalkToHostages:1;
     BITFIELD IsCOOPServer:1;
     BITFIELD IsPlayingCOOP:1;

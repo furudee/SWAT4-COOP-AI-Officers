@@ -565,11 +565,6 @@ struct ASwatEnemy_eventReplicatedPrimaryWeaponClassInfoOnChanged_Parms
 // Constant kMinNotifyStoppedMovingTime is declared in "..\SwatGame\Classes\AI\SwatOfficer.uc"
 #define UCONST_kMinNotifyStoppedMovingTime 0.75
 
-// Constant kMaxNotifyStoppedMovingTime is declared in "..\SwatGame\Classes\AI\SwatOfficer2.uc"
-#define UCONST_kMaxNotifyStoppedMovingTime 1.25
-// Constant kMinNotifyStoppedMovingTime is declared in "..\SwatGame\Classes\AI\SwatOfficer2.uc"
-#define UCONST_kMinNotifyStoppedMovingTime 0.75
-
 // Enum ELastStingWeapon is declared in "..\SwatGame\Classes\SwatPlayer.uc"
 enum ELastStingWeapon
 {
@@ -2214,42 +2209,6 @@ public:
     }
 };
 
-// Class	ASwatOfficer2 is declared in "..\SwatGame\Classes\AI\SwatOfficer2.uc"
-class SWATGAME_API	ASwatOfficer2	: public ASwatAI
-{
-public:
-    FStringNoInit OfficerLoadOutType;
-    class AOfficerLoadOut* LoadOut;
-    FStringNoInit OfficerFriendlyName;
-    class UFormation* CurrentFormation;
-    class ASwatDoor* DoorToBlowC2On;
-    FLOAT MinTimeToFireFullAuto;
-    FLOAT MaxTimeToFireFullAuto;
-    class UMaterial* ViewportOverlayMaterial;
-    FLOAT NextTimeCanReactToHarmlessShotByPlayer;
-    FLOAT DeltaReactionTimeBetweenHarmlessShot;
-    class ATimer* NotifyStoppedMovingTimer;
-    class UMaterial* ReplicatedSkins[4];
-    class UMesh* ReplicatedMesh;
-	   DECLARE_FUNCTION(execGetOfficerCommanderAction);
-	   DECLARE_CLASS(ASwatOfficer2,ASwatAI,0|CLASS_Config,SwatGame)
-	virtual UBOOL IsOtherActorAThreat(AActor* otherActor);
-	UOfficerCommanderAction* GetOfficerCommanderAction() { check(Commander); check(Commander->achievingAction); return Cast<UOfficerCommanderAction>(Commander->achievingAction); }
-
-    // Provides some extra checks for actor-to-pawn collision
-    // Overridden from APawn.h. If the other actor is also a SwatOfficer, they
-    // should not collide.
-    virtual bool WillCollide(const AActor * otherActor, const FVector & otherActorTestLocation) const
-    {
-        if (otherActor->IsA(ASwatOfficer::StaticClass()))
-        {
-            return false;
-        }
-
-        return Super::WillCollide(otherActor, otherActorTestLocation);
-    }
-};
-
 // Class	ASwatPlayer is declared in "..\SwatGame\Classes\SwatPlayer.uc"
 class SWATGAME_API	ASwatPlayer	: public ASwatRagdollPawn
 {
@@ -3350,7 +3309,6 @@ AUTOGENERATE_FUNCTION(ASwatGamePlayerController,-1,execFlagForPrecache);
 AUTOGENERATE_FUNCTION(ASwatGamePlayerController,-1,execGetLookAroundSpeed);
 AUTOGENERATE_FUNCTION(ASwatHUD,-1,execDrawDebugCover);
 AUTOGENERATE_FUNCTION(ASwatOfficer,-1,execGetOfficerCommanderAction);
-AUTOGENERATE_FUNCTION(ASwatOfficer2,-1,execGetOfficerCommanderAction);
 AUTOGENERATE_FUNCTION(ASwatPawn,-1,execIsArrested);
 AUTOGENERATE_FUNCTION(ASwatPawn,-1,execDoesBelieveDoorWedged);
 AUTOGENERATE_FUNCTION(ASwatPawn,-1,execDoesBelieveDoorLocked);
@@ -3461,7 +3419,6 @@ VERIFY_CLASS_SIZE_NODIE(ASwatHostage)
 VERIFY_CLASS_SIZE_NODIE(ASwatMPStartCluster)
 VERIFY_CLASS_SIZE_NODIE(ASwatMPStartPoint)
 VERIFY_CLASS_SIZE_NODIE(ASwatOfficer)
-VERIFY_CLASS_SIZE_NODIE(ASwatOfficer2)
 VERIFY_CLASS_SIZE_NODIE(ASwatOfficerStart)
 VERIFY_CLASS_SIZE_NODIE(ASwatPawn)
 VERIFY_CLASS_SIZE_NODIE(ASwatPlayer)
